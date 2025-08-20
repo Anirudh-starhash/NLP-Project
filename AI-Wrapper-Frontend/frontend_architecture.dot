@@ -1,0 +1,115 @@
+// Angular Frontend Architecture
+digraph {
+	graph [fontsize=10 label="Angular Frontend: Components & Flow (Summarize | Question Gen)" labelloc=t rankdir=LR]
+	node [fontsize=10 shape=box]
+	subgraph cluster_app {
+		label="App Shell" style=rounded
+		AppComponent [label="AppComponent
+(app-root)"]
+		Navbar [label=NavbarComponent]
+		Sidebar [label=SidebarComponent]
+		RouterOutlet [label=RouterOutlet]
+		AppComponent -> Navbar
+		AppComponent -> Sidebar
+		AppComponent -> RouterOutlet
+	}
+	subgraph cluster_pages {
+		label="Pages / Routes" style=rounded
+		HomePage [label="HomePageComponent
+(/)"]
+		UploadPage [label="UploadPageComponent
+(/upload)"]
+		ProcessPage [label="ProcessPageComponent
+(/process)"]
+		ResultsPage [label="ResultsPageComponent
+(/results)"]
+		HistoryPage [label="HistoryPageComponent
+(/history)"]
+	}
+	subgraph cluster_upload {
+		label="Upload & Controls" style=rounded
+		FileUpload [label="FileUploadComponent
+(Drag & Drop / Picker)"]
+		ModeSelector [label="ModeSelectorComponent
+(Summary | QGen | Both)"]
+		SettingsPanel [label="SettingsPanelComponent
+(Length, #Qs, Difficulty)"]
+		ChunkPreview [label="SharedContentPreviewComponent
+(Preview cleaned/chunked text)"]
+	}
+	subgraph cluster_results {
+		label="Results View" style=rounded
+		SummaryViewer [label="SummaryViewerComponent
+(Sectioned / Highlights)"]
+		QuizDashboard [label="QuizDashboardComponent
+(JEE-style)"]
+		QuestionList [label=QuestionListComponent]
+		MCQCard [label="MCQCardComponent
+(single/multi-correct)"]
+		Explanation [label="ExplanationPanelComponent
+(Answer & rationale)"]
+	}
+	subgraph cluster_ui {
+		label="Shared UI" style=rounded
+		Loader [label="LoaderComponent
+(Progress/Status)"]
+		ErrorToast [label=ErrorToastComponent]
+		ExportButtons [label="ExportButtonsComponent
+(PDF/JSON/Copy)"]
+		FeedbackWidget [label="FeedbackWidgetComponent
+(Useful? Rating)"]
+		Paginator [label=PaginatorComponent]
+		SearchBar [label=SearchBarComponent]
+		TagChips [label="TagChipsComponent
+(keywords/NER tags)"]
+	}
+	subgraph cluster_services {
+		label="Client Services & State (Angular)" style=rounded
+		ApiService [label="ApiService
+(HTTP to Flask)"]
+		UploadService [label="UploadService
+(file status)"]
+		StateStore [label="StateStore (NgRx/Signals)
+(session, doc, results)"]
+		CacheService [label="CacheService
+(local/session storage)"]
+		GuardAuth [label=AuthGuard]
+		Interceptor [label="HttpInterceptor
+(spinners, errors, auth)"]
+	}
+	RouterOutlet -> HomePage
+	RouterOutlet -> UploadPage
+	RouterOutlet -> ProcessPage
+	RouterOutlet -> ResultsPage
+	RouterOutlet -> HistoryPage
+	UploadPage -> FileUpload
+	UploadPage -> ModeSelector
+	UploadPage -> SettingsPanel
+	UploadPage -> ChunkPreview
+	ProcessPage -> Loader
+	ProcessPage -> ErrorToast
+	ResultsPage -> SummaryViewer
+	ResultsPage -> QuizDashboard
+	ResultsPage -> ExportButtons
+	ResultsPage -> FeedbackWidget
+	QuizDashboard -> SearchBar
+	QuizDashboard -> TagChips
+	QuizDashboard -> QuestionList
+	QuestionList -> MCQCard
+	QuestionList -> Paginator
+	MCQCard -> Explanation
+	FileUpload -> UploadService
+	UploadService -> ApiService [label="init upload/create job"]
+	ModeSelector -> StateStore [label="mode = summary|qgen|both"]
+	SettingsPanel -> StateStore [label="params (length,#Qs,level)"]
+	ChunkPreview -> StateStore [label="reads preprocessed preview"]
+	ProcessPage -> ApiService [label="start processing"]
+	ApiService -> Interceptor [label="auto attach auth / handle errors"]
+	ApiService -> StateStore [label="persist job status/results"]
+	StateStore -> ResultsPage [label="bind summary & quiz JSON"]
+	HistoryPage -> StateStore
+	HistoryPage -> CacheService
+	GuardAuth -> RouterOutlet [label="protect /process, /results"]
+	Interceptor -> Loader [label="show/hide"]
+	Interceptor -> ErrorToast [label=notify]
+}

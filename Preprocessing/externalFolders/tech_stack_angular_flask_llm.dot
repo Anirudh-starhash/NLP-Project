@@ -1,0 +1,58 @@
+// Tech Stack: Angular + Flask AI Wrapper with Two LLMs
+digraph {
+	graph [rankdir=LR]
+	subgraph cluster_client {
+		label=Client
+		Angular [label="Angular Frontend (Upload, Controls, Quiz UI)"]
+	}
+	subgraph cluster_api {
+		label="Backend API (Flask)"
+		Gateway [label="API Gateway / Router"]
+		Auth [label="Auth & Rate Limit"]
+		Pre [label="Preprocessing
+(PDF→MD, Clean, Chunk)"]
+		Embed [label="Embeddings & RAG
+(FAISS/Qdrant)"]
+		Cache [label="Cache (Redis)"]
+		Bus [label="Shared Store / Content Bus"]
+		Router [label="Decision Engine
+(Raw vs Summary vs Both)"]
+		Post [label="Post-processing
+(Scoring, Dedup, JSON)"]
+	}
+	subgraph cluster_models {
+		label="Model Services"
+		LLM1 [label="LLM #1: Summarizer
+(Gemini/GPT/Claude or HF)"]
+		LLM2 [label="LLM #2: Question Gen
+(Gemini/T5/LLaMA)"]
+	}
+	subgraph cluster_data {
+		label="Data Layer"
+		DB [label="Relational DB (Postgres/MySQL)
+(Metadata, Users, Logs)"]
+		Obj [label="Object Storage (S3/Local)
+(PDFs, MD, Exports)"]
+		Obs [label="Observability
+(Logs, Metrics)"]
+	}
+	Angular -> Gateway [label=HTTP]
+	Gateway -> Auth
+	Gateway -> Pre [label="Upload PDF"]
+	Pre -> Embed [label="Chunks + Embeddings"]
+	Pre -> Bus [label="Clean Text / Sections"]
+	Embed -> Router [label="Relevant Chunks"]
+	Bus -> Router [label="Summary/Raw Availability"]
+	Router -> LLM1 [label="When summary needed"]
+	LLM1 -> Bus [label="Section Summaries / Keypoints"]
+	Router -> LLM2 [label="Context (raw/summary/chunks)"]
+	LLM2 -> Post [label="Q/A JSON, MCQs"]
+	Post -> Cache
+	Post -> DB [label=Persist]
+	Gateway -> Cache [label="Get/Set"]
+	Gateway -> DB [label="Users, Jobs, Results"]
+	Gateway -> Obj [label="Store/Fetch Files"]
+	Gateway -> Obs [label="Tracing/Logs"]
+	Post -> Obj [label="Exports (PDF/JSON)"]
+	Gateway -> Angular [label="Results (Summary/Quiz JSON)"]
+}
