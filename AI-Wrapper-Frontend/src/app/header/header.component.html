@@ -11,9 +11,10 @@
       </ng-container>
 
       <ng-container *ngIf="(authService.isLoggedIn$ | async)">
-        <a routerLink="/dashboard">Dashboard</a>
+        <a routerLink="/profile">Profile</a>
         <a (click)="logout()" class="button logout-button">Logout</a>
       </ng-container>
+
     </nav>
   </div>
 </header>
