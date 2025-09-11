@@ -1,0 +1,14 @@
+.main-footer {
+  background-color: var(--royal-card-blue);
+  color: var(--royal-text-muted);
+  padding: 1rem 0; /* Reduced padding for a smaller size */
+  text-align: center;
+  border-top: 1px solid var(--royal-border);
+  font-size: 0.9rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}

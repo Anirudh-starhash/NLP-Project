@@ -1,0 +1,65 @@
+.main-header {
+  background-color: var(--royal-card-blue);
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--royal-border);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+  text-decoration: none;
+  color: var(--royal-gold);
+}
+
+nav a {
+  margin-left: 1.5rem;
+  text-decoration: none;
+  color: var(--royal-text-muted);
+  font-weight: 500;
+  transition: color 0.3s ease;
+  padding: 0.5rem;
+}
+
+nav a:hover {
+  color: var(--royal-text);
+}
+
+nav a.button {
+  background-color: var(--royal-gold);
+  color: var(--royal-dark-blue);
+  padding: 0.6rem 1.2rem;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+nav a.button:hover {
+  background-color: var(--royal-gold-hover);
+  color: #000;
+}
+
+nav a.logout-button {
+  background-color: transparent;
+  border: 1px solid var(--royal-gold);
+  color: var(--royal-gold);
+  cursor: pointer;
+}
+
+nav a.logout-button:hover {
+  background-color: var(--royal-gold);
+  color: var(--royal-dark-blue);
+}

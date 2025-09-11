@@ -1,0 +1,41 @@
+<div class="auth-card">
+  <div *ngIf="isLoginView">
+    <form (ngSubmit)="onSubmit()">
+      <h2>Welcome Back!</h2>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      <button type="submit" class="submit-btn">Login</button>
+      <p class="toggle-link">
+        Don't have an account? <a (click)="toggleView()">Register</a>
+      </p>
+    </form>
+  </div>
+
+  <div *ngIf="!isLoginView">
+    <form (ngSubmit)="onSubmit()">
+      <h2>Create Account</h2>
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="reg-password">Password</label>
+        <input type="password" id="reg-password" name="password" required>
+      </div>
+      <button type="submit" class="submit-btn">Register</button>
+      <p class="toggle-link">
+        Already have an account? <a (click)="toggleView()">Login</a>
+      </p>
+    </form>
+  </div>
+</div>

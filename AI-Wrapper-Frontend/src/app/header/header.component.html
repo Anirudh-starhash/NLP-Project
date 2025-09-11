@@ -1,0 +1,19 @@
+<header class="main-header">
+  <div class="container">
+    <a routerLink="/" class="logo">📄CSAGE BOT</a>
+    <nav>
+      <a routerLink="/about">About</a>
+      <a routerLink="/contact">Contact</a>
+
+      <ng-container *ngIf="!(authService.isLoggedIn$ | async)">
+        <a (click)="openAuthDialog('login')">Login</a>
+        <a (click)="openAuthDialog('register')" class="button">Register</a>
+      </ng-container>
+
+      <ng-container *ngIf="(authService.isLoggedIn$ | async)">
+        <a routerLink="/dashboard">Dashboard</a>
+        <a (click)="logout()" class="button logout-button">Logout</a>
+      </ng-container>
+    </nav>
+  </div>
+</header>

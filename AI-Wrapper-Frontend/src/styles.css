@@ -1,1 +1,37 @@
-/* You can add global styles to this file, and also import other style files */
+/* Import a royal-looking font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;500&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif; /* Elegant sans-serif for body */
+  background-color: #0F172A; /* Deep navy blue background */
+  color: #E2E8F0; /* Off-white text for readability */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif; /* Classy serif for headings */
+}
+
+/* Define CSS variables for our royal color palette for easy reuse */
+:root {
+  --royal-dark-blue: #0F172A;
+  --royal-card-blue: #1E293B;
+  --royal-gold: #D4AF37;
+  --royal-gold-hover: #C39B2F;
+  --royal-text: #E2E8F0;
+  --royal-text-muted: #94A3B8;
+  --royal-border: #334155;
+}
+/* 4. Keep your dialog and blur styles */
+.cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  background-color: rgba(255, 255, 255, 0.5); /* Lighten the backdrop for the light theme */
+}
+
+.auth-dialog-container .mat-mdc-dialog-container .mdc-dialog__surface {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}

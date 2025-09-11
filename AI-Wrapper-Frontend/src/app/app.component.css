@@ -1,0 +1,11 @@
+:host {
+  display: grid;
+  grid-template-rows: auto 1fr auto; /* Header, Main Content, Footer */
+  min-height: 100vh;
+}
+
+/* The <main> tag we added earlier */
+.content-area {
+  /* This area will now automatically fill the space */
+  width: 100%;
+}
