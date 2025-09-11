@@ -1,16 +1,28 @@
-<form (ngSubmit)="onRegister()">
+<!-- src/app/register/register.component.html -->
+<form (ngSubmit)="onRegister()" #registerForm="ngForm">
   <h2>Create Account</h2>
+
   <div class="form-group">
-    <label for="name">Full Name</label>
-    <input type="text" id="name" name="name" required>
+    <label for="first-name">First Name</label>
+    <input type="text" id="first-name" name="firstname" [(ngModel)]="registerData.firstname" required>
   </div>
+
+  <div class="form-group">
+    <label for="last-name">Last Name</label>
+    <input type="text" id="last-name" name="lastname" [(ngModel)]="registerData.lastname" required>
+  </div>
+
   <div class="form-group">
     <label for="reg-email">Email</label>
-    <input type="email" id="reg-email" name="email" required>
+    <input type="email" id="reg-email" name="email" [(ngModel)]="registerData.email" required>
   </div>
+
   <div class="form-group">
     <label for="reg-password">Password</label>
-    <input type="password" id="reg-password" name="password" required>
+    <input type="password" id="reg-password" name="password" [(ngModel)]="registerData.password" required>
   </div>
+
   <button type="submit" class="submit-btn">Register</button>
+
+  <div *ngIf="message" class="message">{{ message }}</div>
 </form>

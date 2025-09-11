@@ -1,20 +1,40 @@
+// src/app/login/login.component.ts
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [], // No special imports needed for this simple component
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+  imports: [FormsModule, CommonModule],
+  styleUrls: ['./login.component.css'],
+  templateUrl: './login.component.html'
 })
 export class LoginComponent {
-  constructor(private authService: AuthService, private router: Router) { }
+
+  loginData = {
+    email: '',
+    password: ''
+  };
+
+  message = '';
+
+  constructor(private authService: AuthService, private router: Router) {}
 
   onLogin() {
-    console.log('Login form submitted');
-    this.authService.login();
-    this.router.navigate(['/dashboard']);
+    this.authService.loginRequest(this.loginData).subscribe({
+      next: (res) => {
+        localStorage.setItem('access_token', res.access_token);
+        localStorage.setItem('user_info', JSON.stringify(res.info));
+        this.message = 'Login successful!';
+        this.router.navigate(['/dashboard']); // or wherever you want to route
+      },
+      error: (err) => {
+        console.error(err);
+        this.message = err.error.message || 'Login failed.';
+      }
+    });
   }
 }
