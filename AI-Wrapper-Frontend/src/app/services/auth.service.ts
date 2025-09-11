@@ -9,6 +9,8 @@ import { tap } from 'rxjs/operators';
 })
 export class AuthService {
   // Existing login state management
+
+  
   private loggedIn = new BehaviorSubject<boolean>(false);
   isLoggedIn$ = this.loggedIn.asObservable();
 

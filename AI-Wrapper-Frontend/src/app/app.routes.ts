@@ -3,9 +3,6 @@ import { HomeComponent } from './home/home.component';
 import { AboutComponent } from './pages/about/about.component'; // Import About
 import { ContactComponent } from './pages/contact/contact.component'; // Import Contact
 
-// src/app/app.routes.ts
-
-// ... imports
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
