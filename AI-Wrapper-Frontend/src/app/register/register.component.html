@@ -25,4 +25,7 @@
   <button type="submit" class="submit-btn">Register</button>
 
   <div *ngIf="message" class="message">{{ message }}</div>
+  <p class="toggle-link">
+    Already have an account? <a (click)="onToggleView()">Login</a>
+  </p>
 </form>

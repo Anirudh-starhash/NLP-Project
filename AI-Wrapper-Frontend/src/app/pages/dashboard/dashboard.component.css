@@ -1,0 +1,81 @@
+.dashboard-layout {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  height: 100%;
+}
+
+.sidebar {
+  flex: 0 0 250px; /* Sidebar width */
+  background-color: var(--bg-surface);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.sidebar h3 {
+  margin-top: 0;
+  color: var(--text-main);
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.pdf-list-placeholder {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 2rem 0;
+}
+
+.main-content {
+  flex: 1; /* Main content takes the rest of the space */
+  color: var(--text-main);
+}
+
+.main-content h2 {
+  margin-top: 0;
+}
+
+.drop-zone {
+  margin-top: 2rem;
+  padding: 3rem;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.drop-zone:hover {
+  border-color: var(--accent);
+  background-color: var(--bg-surface);
+}
+
+.drop-zone.drag-over {
+  border-color: var(--accent);
+  border-style: solid;
+  background-color: var(--bg-surface);
+}
+
+.upload-icon {
+  font-size: 3rem;
+}
+
+.drop-zone-prompt p {
+  margin: 0.5rem 0 0;
+  color: var(--text-main);
+}
+
+.muted-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.file-info {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: var(--bg-surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+}

@@ -1,40 +1,46 @@
 // src/app/register/register.component.ts
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { AuthService } from '../services/auth.service';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports:[CommonModule, FormsModule],
-  templateUrl: './register.component.html',
-  styleUrls: ['./register.component.css']
+  imports: [FormsModule, CommonModule],
+  styleUrls: ['./register.component.css'],
+  templateUrl: './register.component.html'
 })
 export class RegisterComponent {
 
+  @Output() toggleView = new EventEmitter<void>(); // ✅ Declare output event
+
   registerData = {
-    firstname: '',
-    lastname: '',
     email: '',
     password: '',
-    type: 'user',      // Assuming this is required
-    profile_pic: ''    // Can be left empty or handled separately
+    firstname: '',
+    lastname: ''
   };
 
   message = '';
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   onRegister() {
     this.authService.register(this.registerData).subscribe({
       next: (res) => {
-        this.message = res.msg;
+        this.message = 'Registration successful!';
+        this.router.navigate(['/login']);
       },
       error: (err) => {
         console.error(err);
-        this.message = 'Registration failed.';
+        this.message = err.error.msg || 'Registration failed.';
       }
     });
+  }
+
+  onToggleView() {
+    this.toggleView.emit(); // ✅ Emit event when toggling view
   }
 }

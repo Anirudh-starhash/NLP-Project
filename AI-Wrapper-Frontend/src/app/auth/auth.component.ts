@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
+import { LoginComponent } from "../login/login.component";
+import { RegisterComponent } from '../register/register.component';
 
 @Component({
   selector: 'app-auth',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LoginComponent, RegisterComponent],
   templateUrl: './auth.component.html',
   styleUrls: ['./auth.component.css']
 })
@@ -36,7 +38,8 @@ export class AuthComponent implements OnInit {
     this.dialogRef.close(); // Close the dialog on successful submission
   }
 
-  toggleView() {
+  toggleAuthView(){
     this.isLoginView = !this.isLoginView;
   }
+
 }
