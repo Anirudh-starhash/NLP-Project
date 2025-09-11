@@ -1,30 +1,22 @@
 <div class="dashboard-layout">
-  <aside class="sidebar">
-    <h3>Uploaded PDFs</h3>
+  <!-- <aside class="sidebar" [class.closed]="!isSidebarOpen">
+    <header class="sidebar-header">
+      <h3>Uploaded PDFs</h3>
+    </header>
     <div class="pdf-list-placeholder">
       <p>Your documents will appear here.</p>
     </div>
-  </aside>
+  </aside> -->
 
   <main class="main-content">
-    <h2>Welcome to Your Dashboard</h2>
-    <p>Upload a new document to get started.</p>
-
-    <div
-      class="drop-zone"
-      (click)="fileInput.click()"
-      (dragover)="onDragOver($event)"
-      (dragleave)="onDragLeave($event)"
-      (drop)="onDrop($event)"
-      [class.drag-over]="isDragging">
-      <input #fileInput type="file" (change)="onFileSelected($event)" accept=".pdf" hidden>
-      <div class="drop-zone-prompt">
-        <span class="upload-icon">☁️</span>
-        <p><strong>Drag & Drop</strong> your PDF here</p>
-        <p class="muted-text">or click to browse from your device</p>
+    <input #fileInput type="file" (change)="onFileSelected($event)" accept=".pdf" hidden>
+    <div class="upload-card" (click)="fileInput.click()">
+      <h2>Welcome to Your Dashboard</h2>
+      <div class="plus-icon-container">
+        <span class="plus-icon">+</span>
       </div>
+      <p class="upload-prompt">Click to upload a new document</p>
     </div>
-    
     <div *ngIf="fileName" class="file-info">
       Selected file: <strong>{{ fileName }}</strong>
     </div>

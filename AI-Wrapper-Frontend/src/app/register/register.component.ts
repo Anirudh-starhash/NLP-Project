@@ -4,6 +4,7 @@ import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatDialogRef } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-register',
@@ -25,13 +26,19 @@ export class RegisterComponent {
 
   message = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private dialogRef: MatDialogRef<RegisterComponent>) {}
 
   onRegister() {
     this.authService.register(this.registerData).subscribe({
       next: (res) => {
         this.message = 'Registration successful!';
-        this.router.navigate(['/login']);
+
+        this.dialogRef.close();
+
+        this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         console.error(err);

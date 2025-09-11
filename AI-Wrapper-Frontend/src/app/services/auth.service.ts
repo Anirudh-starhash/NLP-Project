@@ -10,11 +10,11 @@ import { tap } from 'rxjs/operators';
 export class AuthService {
   // Existing login state management
 
-  
+
   private loggedIn = new BehaviorSubject<boolean>(false);
   isLoggedIn$ = this.loggedIn.asObservable();
 
-  private baseUrl = 'http://localhost:5000'; // Backend URL
+  private baseUrl = 'http://localhost:5000/api'; // Backend URL
 
   constructor(private http: HttpClient) {
     // Optionally check localStorage to persist login state across reloads

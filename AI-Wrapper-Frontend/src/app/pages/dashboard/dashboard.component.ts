@@ -9,8 +9,18 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent {
+  isSidebarOpen = true;
   isDragging = false;
   fileName: string | null = null;
+
+
+
+
+
+  
+  toggleSidebar() {
+    this.isSidebarOpen = !this.isSidebarOpen;
+  }
 
   onDragOver(event: DragEvent) {
     event.preventDefault(); // Prevents the browser from opening the file

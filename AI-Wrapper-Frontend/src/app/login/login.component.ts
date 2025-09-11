@@ -1,9 +1,11 @@
 // src/app/login/login.component.ts
+
 import { Component, EventEmitter, Output } from '@angular/core';
 import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatDialogRef } from '@angular/material/dialog'; // 1. Import MatDialogRef
 
 @Component({
   selector: 'app-login',
@@ -14,7 +16,7 @@ import { FormsModule } from '@angular/forms';
 })
 export class LoginComponent {
 
-  @Output() toggleView = new EventEmitter<void>(); // ✅ Declare output event
+  @Output() toggleView = new EventEmitter<void>();
 
   loginData = {
     email: '',
@@ -23,7 +25,11 @@ export class LoginComponent {
 
   message = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private dialogRef: MatDialogRef<LoginComponent> // 2. Inject MatDialogRef
+  ) {}
 
   onLogin() {
     this.authService.loginRequest(this.loginData).subscribe({
@@ -31,6 +37,10 @@ export class LoginComponent {
         localStorage.setItem('access_token', res.access_token);
         localStorage.setItem('user_info', JSON.stringify(res.info));
         this.message = 'Login successful!';
+
+        // 3. Close the dialog before navigating
+        this.dialogRef.close();
+
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
@@ -41,6 +51,6 @@ export class LoginComponent {
   }
 
   onToggleView() {
-    this.toggleView.emit(); // ✅ Emit event when toggling view
+    this.toggleView.emit();
   }
 }

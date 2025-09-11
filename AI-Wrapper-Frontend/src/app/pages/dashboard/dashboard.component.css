@@ -1,81 +1,139 @@
 .dashboard-layout {
   display: flex;
-  gap: 2rem;
+  height: calc(100vh - 120px);
   padding: 2rem;
-  height: 100%;
+  gap: 2rem;
 }
 
+/* --- Collapsible Sidebar Styles --- */
 .sidebar {
-  flex: 0 0 250px; /* Sidebar width */
+  position: relative;
+  flex-shrink: 0;
+  width: 280px;
   background-color: var(--bg-surface);
   padding: 1.5rem;
   border-radius: 12px;
-  border: 1px solid var(--border);
+  /* ✅ FIX: Border color is now the accent color */
+  border: 1px solid var(--royal-gold);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.4s ease, padding 0.4s ease, transform 0.4s ease;
+  overflow: hidden;
 }
 
-.sidebar h3 {
-  margin-top: 0;
+/* This class makes the sidebar disappear */
+.sidebar.closed {
+  width: 0;
+  padding: 1.5rem 0;
+  border-color: transparent; /* Hide border when closed */
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.sidebar-header h3 {
+  margin: 0;
   color: var(--text-main);
-  border-bottom: 2px solid var(--border);
-  padding-bottom: 0.5rem;
+  white-space: nowrap;
+}
+
+.toggle-btn {
+  position: absolute;
+  top: 1.25rem;
+  right: 1rem;
+  z-index: 10;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.4s ease;
+}
+
+.toggle-btn span {
+  font-size: 1.5rem;
+  /* ✅ FIX: Arrow color is now the accent color */
+  color: var(--accent);
+  transition: transform 0.4s ease;
+  line-height: 0;
+}
+
+.sidebar.closed .toggle-btn span {
+  transform: rotate(180deg);
 }
 
 .pdf-list-placeholder {
   text-align: center;
   color: var(--text-muted);
   font-size: 0.9rem;
-  padding: 2rem 0;
+  white-space: nowrap;
 }
 
+/* --- Main Content & Upload Card Styles --- */
 .main-content {
-  flex: 1; /* Main content takes the rest of the space */
-  color: var(--text-main);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.main-content h2 {
-  margin-top: 0;
-}
-
-.drop-zone {
-  margin-top: 2rem;
+.upload-card {
+  width: 100%;
+  max-width:80%;
   padding: 3rem;
-  border: 2px dashed var(--border);
-  border-radius: 12px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--royal-gold);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   cursor: pointer;
-  transition: background-color 0.3s, border-color 0.3s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height:100vh;
 }
 
-.drop-zone:hover {
-  border-color: var(--accent);
-  background-color: var(--bg-surface);
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+  text-decoration: none;
+  color: var(--royal-gold);
+
 }
 
-.drop-zone.drag-over {
-  border-color: var(--accent);
-  border-style: solid;
-  background-color: var(--bg-surface);
+.upload-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
 }
 
-.upload-icon {
+.upload-card h2, .plus-icon-container, .upload-prompt {
+  margin: 0.5rem 0;
+}
+
+.plus-icon {
   font-size: 3rem;
-}
-
-.drop-zone-prompt p {
-  margin: 0.5rem 0 0;
-  color: var(--text-main);
-}
-
-.muted-text {
-  font-size: 0.9rem;
   color: var(--text-muted);
 }
 
 .file-info {
-  margin-top: 1rem;
-  padding: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.25rem;
   background-color: var(--bg-surface);
   border-radius: 8px;
   border: 1px solid var(--border);
   font-size: 0.9rem;
+  width: 100%;
+  max-width: 600px;
+  box-sizing: border-box;
 }
