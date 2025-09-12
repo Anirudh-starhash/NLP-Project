@@ -12,6 +12,7 @@ from celery import Celery
 from flask_login import LoginManager
 from flask_restful import Resource,Api
 from application.user_controllers import *
+from application.file_controllers import *
 
 '''
   from application.user_controllers import *
@@ -41,6 +42,7 @@ def create_app():
     '''
   
     app.register_blueprint(user_blueprint, url_prefix='/api')
+    app.register_blueprint(file_blueprint, url_prefix='/api')
     if os.getenv('ENV', "development") == "production":
         app.logger.warning("Currently no production config is set up")
         raise Exception("Currently no production config is set up")
@@ -48,8 +50,11 @@ def create_app():
         app.logger.info("Starting local development")
         print('Starting local Development')
         app.config.from_object(LocalDevelopmentConfig)
+        
+        app.config['UPLOAD_FOLDER'] = 'uploads/'
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
        
-        app.app_context().push()
+        #app.app_context().push()
         
         
        
@@ -60,7 +65,7 @@ def create_app():
         app.config['CACHE_REDIS_DB'] = 0
         app.config['CACHE_REDIS_URL'] = 'redis://localhost:6379/0'
             
-        app.app_context().push()
+        #app.app_context().push()
         
         app.config['SECRET_KEY'] = "Secret is meant to be Secret"
         app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
@@ -95,7 +100,17 @@ def create_app():
 #app,api,celery=create_app()
 
 app,api=create_app()
-CORS(app)
+
+CORS(app, 
+    resources=
+    {   r"/api/*": 
+        { 
+          "origins": "http://localhost:4200"
+        }
+    }, 
+    supports_credentials=True
+)
+
 migrate=Migrate(app)
 jwt=JWTManager(app)
 cache=Cache(app,config=app.config)
@@ -106,6 +121,12 @@ def home():
     return jsonify({
         'msg':'Hey you are connected to backend!'
     }),200
+    
+from flask import send_from_directory
+
+@app.route('/uploads/<path:filename>')
+def serve_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route("/cache")
 @cache.cached(timeout=30)

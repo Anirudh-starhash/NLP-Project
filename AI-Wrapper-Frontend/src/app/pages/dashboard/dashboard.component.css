@@ -137,3 +137,28 @@
   max-width: 600px;
   box-sizing: border-box;
 }
+
+.pdf-list ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.pdf-list li {
+  margin-bottom: 10px;
+}
+
+.pdf-list a {
+  word-break: break-word;  /* Allows breaking long words */
+  white-space: normal;    /* Allows wrapping text */
+  color: #9b59b6;
+  text-decoration: none;
+}
+
+.pdf-list a:hover {
+  text-decoration: underline;
+}
+
+.pdf-list small {
+  display: block;
+  color: #bdc3c7;
+}

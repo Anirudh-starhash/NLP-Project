@@ -91,7 +91,7 @@ def user_login():
                 'message':'Wrong Password!', 
             }),202
         
-        access_token=create_access_token(identity=u.user_id,expires_delta=timedelta(days=1))
+        access_token=create_access_token(identity=str(u.user_id),expires_delta=timedelta(days=1))
         info={
             'id':u.user_id,
             'email':u.user_email,

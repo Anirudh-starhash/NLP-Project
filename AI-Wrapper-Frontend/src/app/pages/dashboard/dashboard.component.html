@@ -1,12 +1,21 @@
 <div class="dashboard-layout">
-  <!-- <aside class="sidebar" [class.closed]="!isSidebarOpen">
+  <aside class="sidebar" [class.closed]="!isSidebarOpen">
     <header class="sidebar-header">
       <h3>Uploaded PDFs</h3>
     </header>
-    <div class="pdf-list-placeholder">
-      <p>Your documents will appear here.</p>
+    <div class="pdf-list">
+      <ul>
+        <li *ngFor="let pdf of uploadedPdfs">
+          <a [href]="'http://localhost:5000/uploads/' + pdf.filename" target="_blank">
+            {{ pdf.filename }}
+          </a>
+          <br>
+          <small>{{ pdf.upload_time }}</small>
+        </li>
+      </ul>
     </div>
-  </aside> -->
+  </aside>
+
 
   <main class="main-content">
     <input #fileInput type="file" (change)="onFileSelected($event)" accept=".pdf" hidden>
