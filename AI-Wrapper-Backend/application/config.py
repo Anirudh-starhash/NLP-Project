@@ -19,7 +19,7 @@ class Config():
     
 class LocalDevelopmentConfig(Config):
     
-    SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "library.sqlite3")
+    SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "db_directory", "testdb.sqlite3")
     DEBUG = True
     
     # Other Flask and extension settings
