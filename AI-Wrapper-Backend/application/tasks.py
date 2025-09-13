@@ -8,6 +8,8 @@ import os
 
 
 
+
+
 @celery.task(bind=True)
 def preprocess_pdf(self, file_id):
     '''
@@ -59,7 +61,6 @@ def extract_markdown_from_pdf(filepath):
     try:
        
         pass
-           
     
     except Exception as e:
         logging.error(f"Error extracting markdown from {filepath}: {str(e)}")
