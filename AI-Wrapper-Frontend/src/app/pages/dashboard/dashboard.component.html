@@ -5,17 +5,25 @@
     </header>
     <div class="pdf-list">
       <ul>
-        <li *ngFor="let pdf of uploadedPdfs">
+        <li *ngFor="let pdf of paginatedPdfs()">
           <a [href]="'http://localhost:5000/uploads/' + pdf.filename" target="_blank">
-            {{ pdf.filename }}
+            {{ getDisplayName(pdf.filename) }}
           </a>
           <br>
           <small>{{ pdf.upload_time }}</small>
         </li>
       </ul>
+
+      <!-- Pagination as numbered pages -->
+      <div class="pagination-controls">
+        <button *ngFor="let page of pageNumbers(); let i = index"
+                (click)="goToPage(i)"
+                [class.active]="i === currentPage">
+          {{ page }}
+        </button>
+      </div>
     </div>
   </aside>
-
 
   <main class="main-content">
     <input #fileInput type="file" (change)="onFileSelected($event)" accept=".pdf" hidden>
