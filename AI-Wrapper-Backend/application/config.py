@@ -1,7 +1,8 @@
 import os
 
 # Get the absolute path of the directory where this file is located
-basedir = os.path.abspath(os.path.dirname(__file__))
+basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 
 class Config():
     DEBUG = False

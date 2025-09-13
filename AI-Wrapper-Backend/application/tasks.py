@@ -6,6 +6,7 @@ import logging
 @celery.task(bind=True)
 def preprocess_pdf(self, file_id):
     try:
+        logging.info(f"Preprocess PDF called with file_id={file_id}")
         pdf_file = PDFFile.query.get(file_id)
         if not pdf_file:
             logging.error(f"PDF file with ID {file_id} not found.")

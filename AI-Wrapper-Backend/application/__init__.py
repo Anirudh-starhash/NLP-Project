@@ -37,7 +37,7 @@ def create_app():
     app.app_context().push()
 
     # 3. Configure Celery
-    celery.conf.update(app.config["CELERY"])
+    celery.conf.update(app.config)
 
     class ContextTask(Task):
         def __call__(self, *args, **kwargs):

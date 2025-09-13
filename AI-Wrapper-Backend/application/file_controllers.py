@@ -13,7 +13,7 @@ import base64
 
 import logging
 from flask import current_app
-
+import traceback
 from werkzeug.utils import secure_filename
 import os
 import uuid
@@ -65,6 +65,7 @@ def upload_pdf():
             return jsonify({"message": "File uploaded successfully", "file_id": pdf_file.file_id}), 200
         except Exception as e:
             db.session.rollback()
+            logging.error("Exception occurred", exc_info=True)
             return jsonify({"error": "Failed to save file", "details": str(e)}), 500
     else:
         return jsonify({"error": "Invalid file type, please upload PDF"}), 400
