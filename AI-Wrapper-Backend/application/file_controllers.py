@@ -4,16 +4,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from application.models import PDFFile, User
 from application.database import db
 from datetime import timedelta,datetime
-from flask import current_app as app,Flask
+from flask import Flask
 from flask_caching import Cache
 from celery import shared_task
 from fpdf import *
 from flask_mail import Mail, Message
 import base64
-'''
-   from celery.contrib.abortable import AbortableTask
-   from celery.result import AsyncResult
-'''
+
+import logging
+from flask import current_app
+
 from werkzeug.utils import secure_filename
 import os
 import uuid
@@ -30,7 +30,7 @@ def upload_pdf():
         if not user:
             return jsonify({"error": "User not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error fetching user: {str(e)}")
+        logging.error(f"Error fetching user: {str(e)}")
         return jsonify({"error": "Failed to fetch user"}), 500
     
     if 'file' not in request.files:
@@ -45,7 +45,7 @@ def upload_pdf():
         filename = secure_filename(file.filename)
         unique_id = str(uuid.uuid4())
         filename = unique_id + "_" + filename
-        upload_folder = app.config['UPLOAD_FOLDER']
+        upload_folder = current_app.config['UPLOAD_FOLDER']
         filepath = os.path.join(upload_folder, filename)
         
         os.makedirs(upload_folder, exist_ok=True)
@@ -55,6 +55,13 @@ def upload_pdf():
             pdf_file = PDFFile(filename=filename, filepath=filepath,user_id=user.user_id)
             db.session.add(pdf_file)
             db.session.commit()
+            
+            # before sending a response to frontend 
+            
+            #preprocess the pdf to extract text and save it to the database
+            from application.tasks import preprocess_pdf
+            preprocess_pdf.delay(pdf_file.file_id)
+            
             return jsonify({"message": "File uploaded successfully", "file_id": pdf_file.file_id}), 200
         except Exception as e:
             db.session.rollback()
@@ -89,5 +96,5 @@ def get_pdfs():
         
         return jsonify({"pdfs": pdf_list}), 200
     except Exception as e:
-        app.logger.error(f"Error fetching PDFs: {str(e)}")
+        logging.error(f"Error fetching PDFs: {str(e)}")
         return jsonify({"error": "Failed to fetch PDFs"}), 500

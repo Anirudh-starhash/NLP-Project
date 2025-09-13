@@ -1,20 +1,28 @@
 import os
-cur_directory=os.path.abspath(os.path.dirname(__file__))
+
+# Get the absolute path of the directory where this file is located
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config():
-    DEBUG=False
-    SQLITE_DB_DIR=None
-    SQLALCHEMY_DATABASE_URI=None
-    SQLALCHEMY_TRACK_MODIFIATIONS=False
-    CELERY_BROKER_URL="redis://localhost:6379/0"
-    CELERY_RESULT_BACKEND="redis://localhost:6379/0"
-    broker_connection_retry_on_startup=True 
+    DEBUG = False
     
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+   
+    CELERY = dict(
+        broker_url="redis://localhost:6379/0",
+        result_backend="redis://localhost:6379/0",
+        broker_connection_retry_on_startup=True
+    )
     
 class LocalDevelopmentConfig(Config):
-    SQLITE_DB_DIR=os.path.join(cur_directory,"../db_directory")
-    SQLALCHEMY_DATABASE_URI="sqlite:///"+os.path.join(SQLITE_DB_DIR,"testdb.sqlite3")
-    DEBUG=True
     
-   
-   
+    SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "library.sqlite3")
+    DEBUG = True
+    
+    # Other Flask and extension settings
+    UPLOAD_FOLDER = 'uploads/'
+    CACHE_TYPE = 'RedisCache'
+    CACHE_REDIS_URL = 'redis://localhost:6379/0'
+    SECRET_KEY = "Secret is meant to be Secret"
+    JWT_SECRET_KEY = 'your_jwt_secret_key'
