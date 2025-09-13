@@ -21,6 +21,7 @@ class PDFFile(db.Model):
     filepath = db.Column(db.String(512), nullable=False)
     upload_time = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))  # If you want to associate file with a user
-
+    status = db.Column(db.String(50), default='uploaded')  # e.g., uploaded, processing, completed, failed
+    markdown_content = db.Column(db.Text)  # Store extracted markdown conten
     # Relationship (optional)
     user = db.relationship('User', backref=db.backref('pdf_files', lazy=True))
