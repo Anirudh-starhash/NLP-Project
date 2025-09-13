@@ -2,11 +2,11 @@ from . import celery
 from application.models import PDFFile
 from application.database import db
 import logging
+import subprocess
+import tempfile
+import os
 
-from marker.converters import convert_single_pdf
-from marker.models import load_all_models
 
-model_list = load_all_models()
 
 @celery.task(bind=True)
 def preprocess_pdf(self, file_id):
@@ -58,9 +58,8 @@ def extract_markdown_from_pdf(filepath):
     '''
     try:
        
-        logging.info(f"Extracting markdown from {filepath}")  # Ensure models are loaded
-        markdown_text,out_data = convert_single_pdf(filepath,model_list)
-        return markdown_text
+        pass
+           
     
     except Exception as e:
         logging.error(f"Error extracting markdown from {filepath}: {str(e)}")
