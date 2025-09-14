@@ -24,7 +24,7 @@ class LocalDevelopmentConfig(Config):
     DEBUG = True
     
     # Other Flask and extension settings
-    UPLOAD_FOLDER = 'uploads/'
+    UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
     CACHE_TYPE = 'RedisCache'
     CACHE_REDIS_URL = 'redis://localhost:6379/0'
     SECRET_KEY = "Secret is meant to be Secret"

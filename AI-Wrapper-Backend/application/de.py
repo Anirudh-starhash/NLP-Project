@@ -5,6 +5,13 @@ import re
 import logging
 from typing import Dict, Any
 from . import celery
+from application.database import db
+from application.models import PDFFile, PDFChunk
+
+import re
+import spacy
+
+nlp=spacy.load("en_core_web_sm") # small english dataset
 
 '''
     We Performed Text Extraction using pdfplumber
@@ -111,6 +118,178 @@ class DecisionEngine:
             return "huggingface_transformers"
         
         
+    def prepare_chunks(self,chunking_strategy:str,pdf_path:str, file_id:int)->list:
+        '''
+            Prepares chunks based on the chunking strategy.
+        '''
+        print(f"Preparing chunks using strategy: {chunking_strategy}")
+        logging.info(f"Preparing chunks using strategy: {chunking_strategy}")
+        
+        text = self.extract_text_from_pdf(pdf_path)
+        
+        if chunking_strategy == "section_heading_split":
+            chunks = self.section_heading_split(text)
+        elif chunking_strategy == "recursive_character_split":
+            chunks = self.recursive_character_split(text)
+        else:
+            chunks = self.token_split(text)
+        
+        
+        for chunk in chunks:
+            pdf_chunk = PDFChunk(
+                file_id=file_id,
+                content=chunk['content'],
+                chunk_index=chunk['chunk_index'],
+                start_char=chunk['start_char'],
+                end_char=chunk['end_char']
+            )
+            db.session.add(pdf_chunk)
+        db.session.commit()
+        
+        print(f"Prepared {len(chunks)} chunks.")
+        logging.info(f"Prepared {len(chunks)} chunks.")
+        
+     
+     
+    '''
+        1)  In Section Heading Split we use NLP techniques using reges
+            for sentence detection
+        2)  Detect headings with regex
+        3)  Group sentences under headings into chunks
+        4)  Return a list of dicts with content, chunk_index, 
+            start_char, end_char
+    '''   
+    def section_heading_split(self, text: str) -> list:
+        
+        '''
+            Splits text into chunks based on headings.
+            Returns list of dicts with content, chunk_index, 
+            start_char, end_char.
+        '''
+        
+        chunks=[]
+        #regex pattens for headings
+        heading_pattern = re.compile(r'(^\d+(\.\d+)*\s.*)|(^Chapter\s\d+)', re.MULTILINE)
+        # most chapters work with 1, 2.1 or Chapter X etc
+        
+        #Find all heading matches in the text
+        matches=list(heading_pattern.finditer(text))
+        
+        if not matches:
+            return self.recursive_character_split(text)
+        
+        #create chunks based on headings positions
+        for idx , match in enumerate(matches):
+            start_idx=match.start()
+            end_idx=matches[idx+1].start() if idx+1 < len(matches) else len(text)
+            chunk_text=text[start_idx:end_idx].strip()
+            
+            if chunk_text:
+                chunks.append({
+                    "content":chunk_text,
+                    "chunk_index":idx,
+                    "start_char":start_idx,
+                    "end_char":end_idx
+                })
+        
+        return chunks
+    
+    '''
+        1)  In Recursive Character Split we use NLP techniques using reges
+            for sentence detection for smart splits like if any threshold 
+            exceeds
+        2)  Split text recursively into <= max_chunk_size characters
+        3) Prefer splitting at sentence boundaries (using NLTK/spaCy)
+        4) Include overlap for context
+       
+    '''
+    def recursive_character_split(self, text: str, max_chunk_size: int = 2000, overlap: int = 200) -> list:
+        '''
+            Splits text recursively into smaller chunks 
+            based on character count.
+            Tries to split at sentence boundaries using spaCy.
+        '''
+        
+        chunks=[]
+        doc=nlp(text)
+        sentences=[sent.text for sent in doc.sents]
+        
+        current_chunk=""
+        start_char=0
+        idx=0
+        
+        for sent in sentences:
+            if len(sent)+ len(current_chunk) + 1 < max_chunk_size:
+                current_chunk+=sent+ " "
+            else:
+                end_char=start_char + len(current_chunk)
+                chunks.append({
+                    "content":current_chunk.strip(),
+                    "chunk_index":idx,
+                    "start_char":start_char,
+                    "end_char":end_char
+                })
+                idx+=1
+                
+                # start new chunk with overlap
+                overlap_text=current_chunk[-overlap:] if overlap > 0 else ""
+                start_char=end_char - len(overlap_text)
+                current_chunk=overlap_text + sent + " "
+
+        
+        # Add last chunk
+        if current_chunk.strip():
+            end_char = start_char + len(current_chunk)
+            chunks.append({
+                "content": current_chunk.strip(),
+                "chunk_index": idx,
+                "start_char": start_char,
+                "end_char": end_char
+            })
+            
+        return chunks
+    
+    '''
+        1) For Token Split we use simple whitespace and 
+           punctuation based tokenization
+        2) Tokenize text into words/tokens
+        3) Create chunks of max_tokens with optional overlap
+        4) Join tokens back into string chunks
+    '''
+    def token_split(self, text: str, max_tokens: int = 500, overlap: int = 50) -> list:
+        '''
+            Splits text into chunks based on token count.
+             Overlap helps retain context.
+        '''
+        
+        chunks=[]
+        doc=nlp(text)
+        
+        tokens=[token.text for token in doc]
+        
+        idx=0
+        start_char=0
+        
+        i=0
+        while i < len(tokens):
+            chunk_tokens=tokens[i:i+max_tokens]
+            chunk_text="".join(chunk_tokens)
+            end_char=start_char + len(chunk_text)
+            
+           
+            chunks.append({
+                "content":chunk_text,
+                "chunk_index":idx,
+                "start_char":start_char,
+                "end_char":end_char
+            })
+            idx+=1
+            
+            i+=max_tokens - overlap
+            start_char=end_char - len("".join(chunk_tokens[-overlap:])) if overlap > 0 else end_char
+
+        return chunks
+
 if __name__ == "__main__":
     pdf_file = "sample_document.pdf"  # path to PDF file
     de = DecisionEngine()

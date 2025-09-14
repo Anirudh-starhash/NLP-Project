@@ -40,6 +40,12 @@ def preprocess_pdf(self, file_id):
         db.session.commit()
             
         print(f"Pre Processsing Completed for file ID {file_id}.")
+        print(f"Creating Chunks for the File id {file_id}")
+        
+        self.generate_chunks.delay(file_id)
+        
+        print(f"Generating Chunks for pdf file ID {file_id} has been queued.")
+        
         
         
         logging.info(f"Preprocessing completed for file ID {file_id}.")
@@ -53,3 +59,36 @@ def preprocess_pdf(self, file_id):
         
         raise
     
+@celery.task(bind=True)
+def generate_chunks(self,file_id:int):
+    pdf_file = None
+    try:
+        logging.info(f"Generating Chunks of PDF called with file_id={file_id}")
+        pdf_file = db.session.get(PDFFile, file_id)
+        if not pdf_file:
+            logging.error(f"PDF file with ID {file_id} not found.")
+            return {"status": "error", "message": "File not found"}
+        
+        pdf_file.status = 'preparing_chunks'
+        db.session.commit()
+        
+        de=DecisionEngine()
+        de.prepare_chunks(pdf_file.chunking_strategy,pdf_file.filepath,file_id)
+        
+        pdf_file.status = 'chunks_ready'
+        db.session.commit()
+        
+        return {
+            "status":"success",
+            "message":"Chunks created successfully",    
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error during preprocessing for file ID {file_id}: {str(e)}")
+        
+        if pdf_file:
+            pdf_file.status = 'failed'
+            db.session.commit()
+        
+        raise
