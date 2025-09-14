@@ -2,12 +2,6 @@ from . import celery
 from application.models import PDFFile
 from application.database import db
 import logging
-import subprocess
-import tempfile
-import os
-
-
-
 
 
 @celery.task(bind=True)
@@ -27,19 +21,7 @@ def preprocess_pdf(self, file_id):
         
         pdf_file.status = 'processing'
         db.session.commit()
-       
-        markdown=extract_markdown_from_pdf(pdf_file.filepath)
-        
-        if not markdown:
-            logging.error(f"Markdown extraction failed for {file_id}")
-            pdf_file.status = 'failed'
-            db.session.commit()
-            return {"status": "error", "message": "Markdown extraction failed"}
-
-        # store the markdown content in db
-        pdf_file.markdown_content = markdown
-        pdf_file.status = 'completed'
-        db.session.commit()
+        print(f"Pre Processsing Completed for file ID {file_id}.")
         
         
         logging.info(f"Preprocessing completed for file ID {file_id}.")
@@ -52,17 +34,4 @@ def preprocess_pdf(self, file_id):
             db.session.commit()
         
         raise
-    
-def extract_markdown_from_pdf(filepath):
-    
-    '''
-        Extracts a text from a PDF and converts it to markdown format.
-    '''
-    try:
-       
-        pass
-    
-    except Exception as e:
-        logging.error(f"Error extracting markdown from {filepath}: {str(e)}")
-        return None
     

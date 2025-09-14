@@ -13,12 +13,37 @@ export class DashboardComponent implements OnInit {
   isSidebarOpen = true;
   isDragging = false;
   fileName: string | null = null;
-  uploadedPdfs: any[] = []; // List of PDFs
+  uploadedPdfs: any[] = [];
+  itemsPerPage = 5;
+  currentPage = 0; // List of PDFs
 
   constructor(private httpClient: HttpClient) {}
 
   ngOnInit() {
     this.fetchUploadedPdfs();
+  }
+
+  // Get current page items
+  paginatedPdfs() {
+    const start = this.currentPage * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return this.uploadedPdfs.slice(start, end);
+  }
+
+  // Generate page numbers
+  pageNumbers() {
+    const pages = Math.ceil(this.uploadedPdfs.length / this.itemsPerPage);
+    let pageLabels = [];
+    for (let i = 0; i < pages; i++) {
+      const start = i * this.itemsPerPage + 1;
+      const end = Math.min((i + 1) * this.itemsPerPage, this.uploadedPdfs.length);
+      pageLabels.push(`${start}-${end}`);
+    }
+    return pageLabels;
+  }
+
+  goToPage(index: number) {
+    this.currentPage = index;
   }
 
   toggleSidebar() {
@@ -97,15 +122,42 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  // In your component.ts
+  getDisplayName(filename: string): string {
+    // Split by "_" and remove the first part if it's a UUID
+    const parts = filename.split('_');
+    if (parts.length > 1 && /^[0-9a-fA-F-]{36}$/.test(parts[0])) {
+      // It's a UUID, remove it
+      parts.shift();
+    }
+    return parts.join('_'); // Join the rest back
+  }
+
+
 
   private handleFile(file: File) {
-    if (file.type === "application/pdf") {
-      console.log('PDF File selected:', file);
-      this.fileName = file.name;
-      this.uploadFile(file);
-    } else {
+    if (file.type !== "application/pdf") {
       alert('Please select a valid PDF file.');
       this.fileName = null;
+      return;
     }
+
+    const originalName = file.name;
+
+    // Check if a PDF with the same display name already exists
+    const duplicate = this.uploadedPdfs.some(pdf =>
+      this.getDisplayName(pdf.filename) === originalName
+    );
+
+    if (duplicate) {
+      alert(`A PDF with the name "${originalName}" already exists. Upload discarded.`);
+      this.fileName = null;
+      return; // Stop further processing
+    }
+
+    console.log('PDF File selected:', file);
+    this.fileName = file.name;
+    this.uploadFile(file);
   }
+
 }

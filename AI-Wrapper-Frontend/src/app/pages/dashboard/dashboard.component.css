@@ -162,3 +162,61 @@
   display: block;
   color: #bdc3c7;
 }
+
+/* Sidebar styling */
+/* Sidebar styling */
+.sidebar {
+  position: relative;
+  flex-shrink: 0;
+  width: 280px;
+  background-color: var(--bg-surface);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--royal-gold);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.4s ease, padding 0.4s ease, transform 0.4s ease;
+  overflow: hidden;
+}
+
+/* PDF list container should take all space and allow scrolling */
+.pdf-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pagination placed at the bottom */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  padding-top: 1rem;
+  padding-bottom: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Styling for page buttons */
+.pagination-controls button {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--royal-gold);
+  color: var(--text-main);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  font-size: 0.85rem;
+}
+
+.pagination-controls button:hover {
+  background-color: var(--royal-gold);
+  color: var(--bg-surface);
+}
+
+.pagination-controls button.active {
+  background-color: var(--royal-gold);
+  color: var(--bg-surface);
+  border-color: var(--royal-gold);
+}
+
