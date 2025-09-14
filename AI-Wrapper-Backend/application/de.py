@@ -336,7 +336,7 @@ class DecisionEngine:
             return
         
         if embedding_model == "huggingface_transformers":
-            self.create_embeddings_huggingface(pdf_chunks, index_file,file_id)
+            self.create_embeddings_huggingface(pdf_chunks,index_file,file_id)
         else:
             self.create_embeddings_gemini_api(pdf_chunks, index_file,file_id)
          
@@ -365,6 +365,14 @@ class DecisionEngine:
             
             ''' 3. Generate embeddings for all chunks '''
             embeddings = model.encode(chunk_contents, convert_to_numpy=True)
+            logging.info(f"Embeddings shape before reshape: {embeddings.shape}")
+
+            if embeddings.ndim == 1:
+                logging.warning("Single chunk detected, reshaping embeddings.")
+                embeddings = embeddings.reshape(1, -1)
+            
+            if embeddings.shape[0] != len(chunk_contents):
+                logging.warning("Number of embeddings does not match number of chunks!")
             
             
             ''' 4. Save embeddings to the database '''
@@ -380,6 +388,7 @@ class DecisionEngine:
             logging.info(f"FAISS index saved to {index_file}")
                
             logging.info("Storing embeddings in the database...")
+            print(pdf_chunks)
             for i, chunk in enumerate(pdf_chunks):
                 
                 # Create a new Embedding object for each chunk
@@ -389,10 +398,11 @@ class DecisionEngine:
                     vector=embeddings[i].tolist()  # Store as a Python list, PickleType will handle it
                 )
                 db.session.add(new_embedding) 
-                
-                db.session.flush()  # Flush to get the ID assigned
-                chunk.embedding_id = new_embedding.id
-                
+                db.session.flush()
+                  # Flush to get the ID assigned
+                chunk.embedding_data = new_embedding.id
+                db.session.add(chunk)
+            
             db.session.commit()
             logging.info("Successfully stored embeddings in the database.")
 
@@ -435,14 +445,25 @@ class DecisionEngine:
                     task_type="RETRIEVAL_DOCUMENT" 
                 )
                 
+                if 'embedding' not in result:
+                    raise ValueError("No 'embedding' in API response")
+
+                embeddings = result['embedding']
                 
+                if isinstance(embeddings[0], float):
+                    logging.warning("Single chunk embedding detected, wrapping it in a list.")
+                    embeddings = [embeddings]
+        
                 all_embeddings.extend(result['embedding'])
+                
                 
                 logging.info(f"Processed batch {i//BATCH_SIZE + 1}/{(len(chunk_contents)-1)//BATCH_SIZE + 1}")
                 # Add a small delay to avoid hitting rate limits (e.g., 60 requests per minute)
                 time.sleep(1) 
 
             embeddings_np = np.array(all_embeddings)
+            if embeddings_np.ndim != 2:
+                raise ValueError(f"Embeddings have invalid shape: {embeddings_np.shape}")
             
             logging.info("Building FAISS index...")
             embedding_dimension = embeddings_np.shape[1] 
@@ -465,9 +486,11 @@ class DecisionEngine:
                     vector=embeddings_np[i].tolist()  # Store as a Python list, PickleType will handle it
                 )
                 db.session.add(new_embedding)  
+                db.session.flush()
                 
-                db.session.flush()  # Flush to get the ID assigned
-                chunk.embedding_id = new_embedding.id
+                  # Flush to get the ID assigned
+                chunk.embedding_data = new_embedding.id
+                db.session.add(chunk)
                 
             db.session.commit()
             logging.info("Successfully stored embeddings in the database.")

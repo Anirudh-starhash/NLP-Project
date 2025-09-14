@@ -3,7 +3,6 @@ import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
-import { PdfService } from '../../services/pdf.service';
 import { EmbeddingDialogComponent } from '../embedding-dialog/embedding-dialog.component';
 
 @Component({
@@ -23,8 +22,7 @@ export class PdfPropComponent implements OnInit {
 
   constructor(
     private httpClient: HttpClient,
-    public dialog: MatDialog,
-    private pdfService:PdfService) {}
+    public dialog: MatDialog) {}
 
   ngOnInit() {
     this.fetchChunks();
@@ -58,8 +56,16 @@ export class PdfPropComponent implements OnInit {
         return;
       }
 
+      const token = localStorage.getItem('access_token');
+
+
       // Call the service to fetch the embedding data
-      this.pdfService.getEmbedding(embeddingId).subscribe({
+      this.httpClient.get(`http://localhost:5000/api/get_embeddings/${embeddingId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        withCredentials: true
+      }).subscribe({
         next: (embeddingData) => {
           // On success, open the dialog and pass the data
           this.dialog.open(EmbeddingDialogComponent, {

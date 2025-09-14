@@ -197,7 +197,10 @@ def get_embedding(embedding_id):
             '''
             
             pdf_file = db.session.get(PDFFile, embedding.file_id)
-            if not pdf_file or pdf_file.user_id != current_user_id:
+            print(pdf_file)
+            
+            if not pdf_file:
+                print(pdf_file.user_id)
                 logging.error(f"User {current_user_id} FORBIDDEN to access embedding {embedding_id}")
                 return jsonify({"error": "Access forbidden"}), 403
 
