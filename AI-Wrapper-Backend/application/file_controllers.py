@@ -172,7 +172,7 @@ def get_chunks(file_id):
         return jsonify({"error": "Failed to fetch chunks"}), 500
     
     
-@file_blueprint.route("/get_embedding/<int:embedding:id>",method=['GET'])
+@file_blueprint.route("/get_embeddings/<int:embedding_id>",methods=['GET'])
 @jwt_required()
 def get_embedding(embedding_id):
     

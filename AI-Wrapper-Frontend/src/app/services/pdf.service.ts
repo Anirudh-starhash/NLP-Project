@@ -44,7 +44,7 @@ export class PdfService {
 
 
   getEmbedding(embeddingId: number): Observable<EmbeddingData> {
-    return this.http.get<EmbeddingData>(`${this.apiUrl}/get_embedding/${embeddingId}`, {
+    return this.http.get<EmbeddingData>(`${this.apiUrl}/get_embeddings/${embeddingId}`, {
       headers: this.getAuthHeaders(),
       withCredentials: true
     });
