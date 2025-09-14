@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity,unset_jwt_cookies
 from werkzeug.security import generate_password_hash, check_password_hash
-from application.models import PDFFile, User, PDFChunk
+from application.models import PDFFile, User, PDFChunk, Embedding
 from application.database import db
 from datetime import timedelta,datetime
 from flask import Flask
@@ -170,3 +170,48 @@ def get_chunks(file_id):
     except Exception as e:
         logging.error(f"Error fetching chunks: {str(e)}")
         return jsonify({"error": "Failed to fetch chunks"}), 500
+    
+    
+@file_blueprint.route("/get_embedding/<int:embedding:id>",method=['GET'])
+@jwt_required()
+def get_embedding(embedding_id):
+    
+        """
+            Fetches a single embedding vector directly from the database.
+            This is the recommended and most efficient method.
+        """
+        try:
+            current_user_id = get_jwt_identity()
+            logging.info(f"User {current_user_id} requesting embedding ID: {embedding_id}")
+
+            # 1. Fetch the embedding record from the database
+            embedding = db.session.get(Embedding, embedding_id)
+
+            if not embedding:
+                logging.warning(f"Embedding with ID {embedding_id} not found.")
+                return jsonify({"error": "Embedding not found"}), 404
+
+            ''' 
+                Verify the file associated with this 
+                embedding belongs to the current user.
+            '''
+            
+            pdf_file = db.session.get(PDFFile, embedding.file_id)
+            if not pdf_file or pdf_file.user_id != current_user_id:
+                logging.error(f"User {current_user_id} FORBIDDEN to access embedding {embedding_id}")
+                return jsonify({"error": "Access forbidden"}), 403
+
+            ''' 3. Return the vector stored in the database record '''
+            logging.info(f"Successfully retrieved embedding {embedding_id} from database.")
+            return jsonify({
+                'id': embedding.id,
+                'file_id': embedding.file_id,
+                'chunk_id': embedding.chunk_id,
+                'vector': embedding.vector  # The vector is already here!
+            })
+
+        except Exception as e:
+            logging.error(f"Error fetching embedding {embedding_id}: {str(e)}")
+            return jsonify({"error": "An internal error occurred"}), 500
+
+        

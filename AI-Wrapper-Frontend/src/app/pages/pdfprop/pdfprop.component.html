@@ -12,6 +12,7 @@
           <th>End Char</th>
           <th>Content</th>
           <th>EmbeddingID</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -21,6 +22,15 @@
           <td>{{ chunk.end_char }}</td>
           <td class="chunk-content">{{ chunk.content }}</td>
           <td>{{ chunk.embedding_id }}</td>
+           <td>
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="showEmbedding(chunk.embedding_id)"
+              [disabled]="!chunk.embedding_id">
+              Show Embedding
+            </button>
+          </td>
         </tr>
       </tbody>
     </table>

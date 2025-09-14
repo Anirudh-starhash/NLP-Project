@@ -147,11 +147,7 @@ class DecisionEngine:
         logging.info(f"Preparing chunks using strategy: {chunking_strategy}")
         
         
-        pdf_hash = compute_pdf_hash(pdf_path)
-        
-        existing_chunks = PDFChunk.query.filter_by(pdf_hash=pdf_hash).all()
-        if existing_chunks:
-            logging.info(f"Chunks already exist for this PDF. Reusing {len(existing_chunks)} chunks.")
+       
             
         
         text = self.extract_text_from_pdf(pdf_path)
@@ -167,11 +163,10 @@ class DecisionEngine:
         for chunk in chunks:
             pdf_chunk = PDFChunk(
                 file_id=file_id,
-                pdf_hash=pdf_hash,
                 content=chunk['content'],
                 chunk_index=chunk['chunk_index'],
                 start_char=chunk['start_char'],
-                end_char=chunk['end_char']
+                end_char=chunk['end_char'],
             )
             db.session.add(pdf_chunk)
         db.session.commit()

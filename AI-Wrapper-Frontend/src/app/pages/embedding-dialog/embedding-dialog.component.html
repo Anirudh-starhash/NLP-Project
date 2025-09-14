@@ -1,0 +1,20 @@
+
+<h2 mat-dialog-title>Embedding Vector Details</h2>
+
+
+<mat-dialog-content class="mat-typography">
+  <p>
+    <strong>Embedding ID:</strong> {{ data.id }} <br>
+    <strong>Associated Chunk ID:</strong> {{ data.chunk_id }}
+  </p>
+  <p>The vector below is the numerical representation of the chunk's content:</p>
+
+
+  <pre class="vector-container">{{ data.vector | json }}</pre>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+
+  <button mat-raised-button color="primary" mat-dialog-close>Close</button>
+</mat-dialog-actions>
