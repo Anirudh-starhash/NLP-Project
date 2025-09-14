@@ -47,7 +47,8 @@ class PDFChunk(db.Model):
    
 
     content = db.Column(db.Text, nullable=False)          
-    chunk_index = db.Column(db.Integer, nullable=True)    
+    chunk_index = db.Column(db.Integer, nullable=True)  
+    chunk_summary=db.Column(db.String,nullable=True)  
     start_char = db.Column(db.Integer, nullable=True)     
     end_char = db.Column(db.Integer, nullable=True)    
     embedding_data = db.Column(db.PickleType, nullable=True)
@@ -87,3 +88,17 @@ class Embedding(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     pdf_chunk = db.relationship('PDFChunk', back_populates='embeddings')
+    
+class SummarizedPdfContent(db.Model):
+    __tablename__ = 'summarized_pdf_content'
+
+    id = db.Column(db.Integer, primary_key=True)
+    summary_text = db.Column(db.Text, nullable=False)
+    original_pdf_id = db.Column(db.Integer, db.ForeignKey('pdf_file.file_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    pdf_file = db.relationship('PDFFile', backref=db.backref('summary', uselist=False))
+    user = db.relationship('User', backref='summaries')
+
+    def __repr__(self):
+        return f'<SummarizedPdfContent {self.id} for PDF {self.original_pdf_id}>'

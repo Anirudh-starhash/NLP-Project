@@ -71,6 +71,7 @@ def create_app():
     # 5. Import and register blueprints
     from .user_controllers import user_blueprint
     from .file_controllers import file_blueprint
+    from .chat_controllers import chat_blueprint
     app.register_blueprint(user_blueprint, url_prefix='/api')
     app.register_blueprint(file_blueprint, url_prefix='/api')
     
