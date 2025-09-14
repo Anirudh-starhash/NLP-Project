@@ -161,6 +161,7 @@ def get_chunks(file_id):
                 "content": chunk.content,
                 "start_char": chunk.start_char,
                 "end_char": chunk.end_char,
+                "embedding_id": chunk.embedding_id
             }
             for chunk in chunks
         ]
