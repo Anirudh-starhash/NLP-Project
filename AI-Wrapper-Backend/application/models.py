@@ -86,4 +86,4 @@ class Embedding(db.Model):
     vector = db.Column(db.PickleType, nullable=False)  
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    pdf_chunk = db.relationship('PDFChunk', backref=db.backref('embeddings', lazy=True, cascade="all, delete-orphan"))
+    pdf_chunk = db.relationship('PDFChunk', back_populates='embeddings')
