@@ -168,6 +168,8 @@ export class DashboardComponent implements OnInit {
     this.isMenuOpen = this.paginatedPdfs().map((_, i) => i === index ? true : false);
   }
 
+  selectedPdfForProperties: any = null;
+
   deletePdf(fileId: number) {
 
     const token = localStorage.getItem('access_token');
@@ -184,6 +186,8 @@ export class DashboardComponent implements OnInit {
         // Refresh the list or remove the PDF from the array
         console.log(res.message);
         this.removePdfFromList(fileId);
+
+        this.selectedPdfForProperties=null
       },
       error: (err) => {
         console.error("Error deleting PDF:", err);
@@ -206,7 +210,7 @@ export class DashboardComponent implements OnInit {
     console.log("Chat Arena option clicked");
   }
 
-  selectedPdfForProperties: any = null;
+
 
   viewProperties(pdf:any) {
     if (!pdf || !pdf.file_id || !pdf.filename) {

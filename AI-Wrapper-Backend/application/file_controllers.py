@@ -114,18 +114,31 @@ def delete_pdf(file_id):
         if not user:
             return jsonify({"error": "User not found"}), 404
 
+
+
         pdf_file = PDFFile.query.filter_by(file_id=file_id, user_id=user.user_id).first()
         if not pdf_file:
             return jsonify({"error": "PDF file not found"}), 404
 
+        project_root = os.path.dirname(current_app.root_path)
+        upload_file_path = os.path.join(project_root, pdf_file.filepath)        
+        faiss_index_path = os.path.join(project_root, 'faiss', f"{file_id}.index")
         
-        file_path = os.path.join(os.path.dirname(current_app.root_path), pdf_file.filepath)
+        
+        try:
+            os.remove(faiss_index_path)
+            logging.info(f"FAISS index {faiss_index_path} removed from filesystem.")
+        except FileNotFoundError:
+            logging.warning(f"FAISS index {faiss_index_path} was not found, but proceeding.")
 
-        # Delete the file from the filesystem
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            logging.info(f"File {file_path} removed from filesystem.")
-        else:            logging.warning(f"File {file_path} not found in filesystem.")
+        # Delete uploaded PDF file
+        try:
+            os.remove(upload_file_path)
+            logging.info(f"Uploaded file {upload_file_path} removed from filesystem.")
+        except FileNotFoundError:
+            logging.warning(f"Uploaded file {upload_file_path} was not found, but proceeding.")
+       
+        
 
         # Delete the record from the database
         db.session.delete(pdf_file)
