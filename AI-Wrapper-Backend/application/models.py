@@ -50,7 +50,7 @@ class PDFChunk(db.Model):
     chunk_index = db.Column(db.Integer, nullable=True)    
     start_char = db.Column(db.Integer, nullable=True)     
     end_char = db.Column(db.Integer, nullable=True)    
-    embedding_id = db.Column(db.PickleType, nullable=True)
+    embedding_data = db.Column(db.PickleType, nullable=True)
     
    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

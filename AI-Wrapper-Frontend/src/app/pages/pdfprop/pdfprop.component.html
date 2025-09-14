@@ -21,13 +21,13 @@
           <td>{{ chunk.start_char }}</td>
           <td>{{ chunk.end_char }}</td>
           <td class="chunk-content">{{ chunk.content }}</td>
-          <td>{{ chunk.embedding_id }}</td>
+          <td>{{ chunk.embedding_data }}</td>
            <td>
             <button
               mat-raised-button
               color="primary"
-              (click)="showEmbedding(chunk.embedding_id)"
-              [disabled]="!chunk.embedding_id">
+              (click)="showEmbedding(chunk.embedding_data)"
+              [disabled]="!chunk.embedding_data">
               Show Embedding
             </button>
           </td>
