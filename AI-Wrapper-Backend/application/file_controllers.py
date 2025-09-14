@@ -99,3 +99,40 @@ def get_pdfs():
     except Exception as e:
         logging.error(f"Error fetching PDFs: {str(e)}")
         return jsonify({"error": "Failed to fetch PDFs"}), 500
+    
+    
+
+
+    
+@file_blueprint.route("/delete_pdf/<int:file_id>", methods=['GET'])
+@jwt_required()
+def delete_pdf(file_id):
+    try:
+        user_identity = get_jwt_identity()
+        user = User.query.filter_by(user_id=user_identity).first()
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        pdf_file = PDFFile.query.filter_by(file_id=file_id, user_id=user.user_id).first()
+        if not pdf_file:
+            return jsonify({"error": "PDF file not found"}), 404
+
+        
+        file_path = os.path.join(os.path.dirname(current_app.root_path), pdf_file.filepath)
+
+        # Delete the file from the filesystem
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logging.info(f"File {file_path} removed from filesystem.")
+        else:            logging.warning(f"File {file_path} not found in filesystem.")
+
+        # Delete the record from the database
+        db.session.delete(pdf_file)
+        db.session.commit()
+
+        return jsonify({"message": "PDF file deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting PDF: {str(e)}")
+        return jsonify({"error": "Failed to delete PDF"}), 500

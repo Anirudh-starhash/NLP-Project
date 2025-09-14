@@ -20,7 +20,9 @@ class PDFFile(db.Model):
     filename = db.Column(db.String(256), nullable=False)
     filepath = db.Column(db.String(512), nullable=False)
     upload_time = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))  # If you want to associate file with a user
-    status = db.Column(db.String(50), default='uploaded')  # e.g., uploaded, processing, completed, failed  # Store extracted markdown conten
-    # Relationship (optional)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))  
+    status = db.Column(db.String(50), default='uploaded')
+    chunking_strategy = db.Column(db.String(50))  
+    embedding_model = db.Column(db.String(100)) 
+    
     user = db.relationship('User', backref=db.backref('pdf_files', lazy=True))

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -15,7 +15,9 @@ export class DashboardComponent implements OnInit {
   fileName: string | null = null;
   uploadedPdfs: any[] = [];
   itemsPerPage = 5;
-  currentPage = 0; // List of PDFs
+  currentPage = 0;
+
+  isMenuOpen: boolean[] = [];// List of PDFs
 
   constructor(private httpClient: HttpClient) {}
 
@@ -158,6 +160,61 @@ export class DashboardComponent implements OnInit {
     console.log('PDF File selected:', file);
     this.fileName = file.name;
     this.uploadFile(file);
+  }
+
+  openMenu(index: number) {
+    this.isMenuOpen = this.paginatedPdfs().map((_, i) => i === index ? true : false);
+  }
+
+  deletePdf(fileId: number) {
+
+    const token = localStorage.getItem('access_token');
+    const url = `http://localhost:5000/api/delete_pdf/${fileId}`;
+
+    this.httpClient.get(url,{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      withCredentials: true
+    }).subscribe({
+      next: (res: any) => {
+        console.log(res.message);
+        // Refresh the list or remove the PDF from the array
+        console.log(res.message);
+        this.removePdfFromList(fileId);
+      },
+      error: (err) => {
+        console.error("Error deleting PDF:", err);
+      }
+    });
+  }
+
+  removePdfFromList(fileId: number) {
+
+    // Filter out the deleted PDF from the uploadedPdfs array
+    this.uploadedPdfs = this.uploadedPdfs.filter(pdf => pdf.file_id !== fileId);
+
+    // Optionally reset the pagination if current page becomes empty
+    if (this.paginatedPdfs().length === 0 && this.currentPage > 0) {
+      this.currentPage--;
+    }
+  }
+
+  chatArena() {
+    console.log("Chat Arena option clicked");
+  }
+
+  properties() {
+    console.log("Properties option clicked");
+  }
+
+
+  @HostListener('document:click', ['$event'])
+  clickOutside(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.popup-menu') && !target.closest('.menu-button')) {
+      this.isMenuOpen = this.paginatedPdfs().map(() => false);
+    }
   }
 
 }

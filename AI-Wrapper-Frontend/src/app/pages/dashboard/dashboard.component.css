@@ -220,3 +220,52 @@
   border-color: var(--royal-gold);
 }
 
+.pdf-item {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.pdf-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.menu-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: white; /* changed from black to white */
+}
+
+
+
+.popup-menu {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  background: #2c2c2c; /* dark background for contrast */
+  border: 1px solid #555;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 10;
+  width: 150px;
+}
+
+.popup-menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
+  border: none;
+  background: none;
+  color: white;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.popup-menu button:hover {
+  background-color: #444;
+}

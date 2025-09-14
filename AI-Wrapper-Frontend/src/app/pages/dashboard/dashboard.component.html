@@ -5,12 +5,21 @@
     </header>
     <div class="pdf-list">
       <ul>
-        <li *ngFor="let pdf of paginatedPdfs()">
-          <a [href]="'http://localhost:5000/uploads/' + pdf.filename" target="_blank">
-            {{ getDisplayName(pdf.filename) }}
-          </a>
-          <br>
+        <li *ngFor="let pdf of paginatedPdfs(); let idx = index" class="pdf-item">
+          <div class="pdf-entry">
+            <a [href]="'http://localhost:5000/' + pdf.filepath" target="_blank">
+              {{ getDisplayName(pdf.filename) }}
+            </a>
+            <button class="menu-button" (click)="openMenu(idx)">⋮</button>
+          </div>
           <small>{{ pdf.upload_time }}</small>
+
+          <!-- Popup menu -->
+          <div *ngIf="isMenuOpen[idx]" class="popup-menu">
+            <button (click)="deletePdf(pdf.file_id)">Delete PDF</button>
+            <button (click)="chatArena()">Chat Arena</button>
+            <button (click)="properties()">Properties</button>
+          </div>
         </li>
       </ul>
 
@@ -24,7 +33,6 @@
       </div>
     </div>
   </aside>
-
 
   <main class="main-content">
     <input #fileInput type="file" (change)="onFileSelected($event)" accept=".pdf" hidden>

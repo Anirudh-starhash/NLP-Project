@@ -6,7 +6,15 @@ import logging
 from typing import Dict, Any
 from . import celery
 
-@celery.task(bind=True)
+'''
+    We Performed Text Extraction using pdfplumber
+    We performed Tokenization using simple regex for word count
+    We peformed Document Complexity Analysis to find charcater count
+    Heading Detection mechanism using regex patterns
+    Rule Based NLP (Heuristic based Decision Making) for chunking strategy
+    Resource Aware NLP ( For Embedding Model Selection)
+'''
+
 class DecisionEngine:
     def __init__(self):
         logging.info("Decision Engine initialized.")
@@ -15,13 +23,16 @@ class DecisionEngine:
         '''
             Analyzes the PDF and extracts key information.
         '''
+        print("analyze_pdf is called with:", pdf_path)
         logging.info(f"Analyzing PDF at path: {pdf_path}")
         
         text = self.extract_text_from_pdf(pdf_path)
         
         if not text.strip():
+            print("No text extracted from PDF.")
             logging.warning("No text extracted from PDF.")
             return {
+                "status": "success",
                 "chunking_strategy": "token_split", 
                 "embedding_model": "huggingface_transformers"
             }
@@ -30,12 +41,15 @@ class DecisionEngine:
         num_words=len(text.split())
         num_headings=self.detect_headings(text)
         
+        print(f"Document Analysis - Chars: {num_chars}, Words: {num_words}, Headings: {num_headings}")
         logging.info(f"Document Analysis - Chars: {num_chars}, Words: {num_words}, Headings: {num_headings}")
         
         self.chunling_strategy = self.decide_chunking_strategy(num_chars, num_words, num_headings)
         self.embedding_model = self.decide_embedding_model(num_chars, num_words) 
         
+        print(f"Decided Chunking Strategy: {self.chunling_strategy}, Embedding Model: {self.embedding_model}")
         return {
+            "status": "success",
             "chunking_strategy": self.chunling_strategy, 
             "embedding_model": self.embedding_model
         }
