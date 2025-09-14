@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { P } from '@angular/cdk/keycodes';
 import { PdfPropComponent } from '../pdfprop/pdfprop.component';
+import { Route, Router } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
@@ -21,7 +21,9 @@ export class DashboardComponent implements OnInit {
 
   isMenuOpen: boolean[] = [];// List of PDFs
 
-  constructor(private httpClient: HttpClient) {}
+  constructor(
+    private httpClient: HttpClient,
+    private router:Router) {}
 
   ngOnInit() {
     this.fetchUploadedPdfs();
@@ -208,6 +210,7 @@ export class DashboardComponent implements OnInit {
 
   chatArena() {
     console.log("Chat Arena option clicked");
+    this.router.navigate(['/chat']);
   }
 
 

@@ -5,6 +5,7 @@ import { ContactComponent } from './pages/contact/contact.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component'; // Import Dashboard
 import { ProfileComponent } from './pages/profile/profile.component';     // Import Profile
 import { authGuard } from './auth/auth.guard';                         // Import the Guard
+import { ChatComponent } from './pages/chat/chat.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -16,6 +17,11 @@ export const routes: Routes = [
     path: 'dashboard',
     component: DashboardComponent,
     canActivate: [authGuard] // Protect this route
+  },
+  {
+    path:'chat',
+    component:ChatComponent,
+    canActivate:[authGuard]
   },
   {
     path: 'profile',

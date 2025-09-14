@@ -8,7 +8,7 @@ import { EmbeddingDialogComponent } from '../embedding-dialog/embedding-dialog.c
 @Component({
   selector: 'app-pdf-prop',
   standalone: true,
-  imports: [CommonModule, EmbeddingDialogComponent],
+  imports: [CommonModule],
   templateUrl: './pdfprop.component.html',
   styleUrls: ['./pdfprop.component.css']
 })
