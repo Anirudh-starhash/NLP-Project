@@ -1,0 +1,28 @@
+<div class="pdf-properties-container">
+  <h2>Chunks for: {{ fileName }}</h2>
+
+  <div *ngIf="loading" class="loading">Loading chunks...</div>
+
+  <div *ngIf="!loading" class="chunks-table-container">
+    <table class="chunks-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Start Char</th>
+          <th>End Char</th>
+          <th>Content</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let chunk of chunks; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ chunk.start_char }}</td>
+          <td>{{ chunk.end_char }}</td>
+          <td class="chunk-content">{{ chunk.content }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <button class="back-button" (click)="goBack()">Back</button>
+</div>

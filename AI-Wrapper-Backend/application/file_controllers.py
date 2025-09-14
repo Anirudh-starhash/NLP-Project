@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity,unset_jwt_cookies
 from werkzeug.security import generate_password_hash, check_password_hash
-from application.models import PDFFile, User
+from application.models import PDFFile, User, PDFChunk
 from application.database import db
 from datetime import timedelta,datetime
 from flask import Flask
@@ -136,3 +136,36 @@ def delete_pdf(file_id):
         db.session.rollback()
         logging.error(f"Error deleting PDF: {str(e)}")
         return jsonify({"error": "Failed to delete PDF"}), 500
+    
+    
+@file_blueprint.route("/get_chunks/<int:file_id>", methods=['GET'])
+@jwt_required()
+def get_chunks(file_id):
+    try:
+        user_identity = get_jwt_identity()
+        user = User.query.filter_by(user_id=user_identity).first()
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        chunks=PDFChunk.query.filter_by(file_id=file_id).all()
+        if not chunks:
+            return jsonify({"error": "No chunks found for this PDF file"}), 404
+
+        
+        
+
+        chunk_list = [
+            {
+                "chunk_id": chunk.chunk_id,
+                "content": chunk.content,
+                "start_char": chunk.start_char,
+                "end_char": chunk.end_char,
+            }
+            for chunk in chunks
+        ]
+
+        return jsonify({"chunks": chunk_list}), 200
+    except Exception as e:
+        logging.error(f"Error fetching chunks: {str(e)}")
+        return jsonify({"error": "Failed to fetch chunks"}), 500

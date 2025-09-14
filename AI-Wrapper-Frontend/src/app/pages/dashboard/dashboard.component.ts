@@ -1,11 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { P } from '@angular/cdk/keycodes';
+import { PdfPropComponent } from '../pdfprop/pdfprop.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PdfPropComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -204,8 +206,10 @@ export class DashboardComponent implements OnInit {
     console.log("Chat Arena option clicked");
   }
 
-  properties() {
-    console.log("Properties option clicked");
+  selectedPdfForProperties: any = null;
+
+  viewProperties(pdf: any) {
+    this.selectedPdfForProperties = pdf;
   }
 
 
@@ -216,5 +220,7 @@ export class DashboardComponent implements OnInit {
       this.isMenuOpen = this.paginatedPdfs().map(() => false);
     }
   }
+
+
 
 }

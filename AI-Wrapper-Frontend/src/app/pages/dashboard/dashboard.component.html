@@ -18,7 +18,7 @@
           <div *ngIf="isMenuOpen[idx]" class="popup-menu">
             <button (click)="deletePdf(pdf.file_id)">Delete PDF</button>
             <button (click)="chatArena()">Chat Arena</button>
-            <button (click)="properties()">Properties</button>
+            <button (click)="viewProperties(pdf)">Properties</button>
           </div>
         </li>
       </ul>
@@ -35,7 +35,9 @@
   </aside>
 
   <main class="main-content">
-    <input #fileInput type="file" (change)="onFileSelected($event)" accept=".pdf" hidden>
+  <input #fileInput type="file" (change)="onFileSelected($event)" accept=".pdf" hidden>
+
+  <ng-container *ngIf="!selectedPdfForProperties; else propertiesView">
     <div class="upload-card" (click)="fileInput.click()">
       <h2>Welcome to Your Dashboard</h2>
       <div class="plus-icon-container">
@@ -46,5 +48,13 @@
     <div *ngIf="fileName" class="file-info">
       Selected file: <strong>{{ fileName }}</strong>
     </div>
-  </main>
-</div>
+  </ng-container>
+
+  <ng-template #propertiesView>
+    <app-pdf-properties
+      [fileId]="selectedPdfForProperties.file_id"
+      [fileName]="getDisplayName(selectedPdfForProperties.filename)"
+      (back)="selectedPdfForProperties = null">
+    </app-pdf-properties>
+  </ng-template>
+</main>

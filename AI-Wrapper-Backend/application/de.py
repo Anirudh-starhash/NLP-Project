@@ -22,6 +22,17 @@ nlp=spacy.load("en_core_web_sm") # small english dataset
     Resource Aware NLP ( For Embedding Model Selection)
 '''
 
+import hashlib
+from application.models import PDFChunk
+
+def compute_pdf_hash(file_path: str) -> str:
+    hasher = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
 class DecisionEngine:
     def __init__(self):
         logging.info("Decision Engine initialized.")
@@ -124,6 +135,14 @@ class DecisionEngine:
         '''
         print(f"Preparing chunks using strategy: {chunking_strategy}")
         logging.info(f"Preparing chunks using strategy: {chunking_strategy}")
+        
+        
+        pdf_hash = compute_pdf_hash(pdf_path)
+        
+        existing_chunks = PDFChunk.query.filter_by(pdf_hash=pdf_hash).all()
+        if existing_chunks:
+            logging.info(f"Chunks already exist for this PDF. Reusing {len(existing_chunks)} chunks.")
+            
         
         text = self.extract_text_from_pdf(pdf_path)
         

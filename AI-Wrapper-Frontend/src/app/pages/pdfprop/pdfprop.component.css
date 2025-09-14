@@ -1,0 +1,44 @@
+.pdf-properties-container {
+  padding: 20px;
+}
+
+.chunks-table-container {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.chunks-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.chunks-table th, .chunks-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.chunk-content {
+  white-space: pre-wrap; /* preserves newlines */
+}
+
+.back-button {
+  margin-top: 15px;
+  padding: 8px 16px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #0056b3;
+}
+
+.loading {
+  font-style: italic;
+}

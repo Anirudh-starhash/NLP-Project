@@ -12,7 +12,7 @@ class User(db.Model):
     type=db.Column(db.String(128))
     profile_pic = db.Column(db.String(128))
 
-    
+    pdf_files = db.relationship('PDFFile', back_populates='user', lazy=True)
 class PDFFile(db.Model):
     __tablename__ = 'pdf_file'
     
@@ -25,35 +25,24 @@ class PDFFile(db.Model):
     chunking_strategy = db.Column(db.String(50))  
     embedding_model = db.Column(db.String(100)) 
     
-    user = db.relationship('User', backref=db.backref('pdf_files', lazy=True))
-
-from sqlalchemy import Column, Integer, String, ForeignKey, Text
-from sqlalchemy.orm import relationship
-from application.database import db
-
-class PDFFile(db.Model):
-    __tablename__ = 'pdf_files'
-    id = Column(Integer, primary_key=True)
-    filename = Column(String(255), nullable=False)
-    filepath = Column(String(500), nullable=False)
-    chunking_strategy = Column(String(100), nullable=True)
-    embedding_model = Column(String(100), nullable=True)
-    status = Column(String(50), default='uploaded')
-
-    # Relationship to chunks
-    chunks = relationship('PDFChunk', back_populates='pdf_file', cascade='all, delete-orphan')
-
+    user = db.relationship('User', back_populates='pdf_file', lazy=True)
+    chunks = db.relationship('PDFChunk', back_populates='pdf_file', lazy=True, cascade="all, delete-orphan")
 
 class PDFChunk(db.Model):
     __tablename__ = 'pdf_chunks'
-    id = Column(Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     
-    file_id = Column(Integer, ForeignKey('pdf_files.id', ondelete='CASCADE'), nullable=False)
-    pdf_file = relationship('PDFFile', back_populates='chunks')
+    file_id = db.Column(
+        db.Integer,
+        db.ForeignKey('pdf_file.file_id', ondelete='CASCADE'),
+        nullable=False
+    )
+    pdf_file = db.relationship('PDFFile', back_populates='chunks')
     
-    content = Column(Text, nullable=False)          
-    chunk_index = Column(Integer, nullable=True)    
-    start_char = Column(Integer, nullable=True)     
-    end_char = Column(Integer, nullable=True)       
+    pdf_hash = db.Column(db.String(64), nullable=False)
+    content = db.Column(db.Text, nullable=False)          
+    chunk_index = db.Column(db.Integer, nullable=True)    
+    start_char = db.Column(db.Integer, nullable=True)     
+    end_char = db.Column(db.Integer, nullable=True)       
 
    
