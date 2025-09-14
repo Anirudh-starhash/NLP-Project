@@ -74,6 +74,7 @@ def create_app():
     from .chat_controllers import chat_blueprint
     app.register_blueprint(user_blueprint, url_prefix='/api')
     app.register_blueprint(file_blueprint, url_prefix='/api')
+    app.register_blueprint(chat_blueprint,url_prefix="/api")
     
     return app, api, celery
 

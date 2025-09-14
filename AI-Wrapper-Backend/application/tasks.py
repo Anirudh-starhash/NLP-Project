@@ -5,6 +5,15 @@ import logging
 from application.de import DecisionEngine
 from celery import chain
 
+from . import create_app
+
+import os
+from dotenv import load_dotenv
+
+import time
+load_dotenv()
+import google.generativeai as genai
+
 
 @celery.task(bind=True)
 def preprocess_pdf(self, file_id):
@@ -101,3 +110,58 @@ def generate_chunks_Embeddings(self, file_id:int):
         
         raise
     
+
+@celery.task(bind=True)
+def summarize_document_chunks(file_id):
+    """
+    A Celery task to generate summaries for all chunks of a specific PDF file.
+    """
+    # Tasks run outside the normal Flask request context, so we create one
+    app = create_app()
+    with app.app_context():
+        # --- All your original logic now lives inside the task ---
+        
+        pdf_record = PDFFile.query.get(file_id)
+        if not pdf_record:
+            print(f"Task failed: PDF with file_id {file_id} not found.")
+            return
+
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            print("Task failed: GOOGLE_API_KEY not configured.")
+            return
+            
+        genai.configure(api_key=api_key)
+        
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            
+            for chunk in pdf_record.chunks:
+                if chunk.chunk_summary:
+                    continue
+
+                prompt = f"""
+                You are analyzing a small text chunk that was extracted from a larger document. This chunk may be incomplete or start and end abruptly. Your task is to do the following:
+
+                1.  Read the text chunk and identify its primary subject or topic.
+                2.  Create a single, complete, and meaningful sentence that describes this topic.
+                3.  If the text is too fragmented to be understood, respond with "Fragment is too incoherent to summarize."
+
+                Text Chunk:
+                ---
+                {chunk.content}
+                ---
+
+                One-sentence Summary:
+                """
+                
+                response = model.generate_content(prompt)
+                chunk.chunk_summary = response.text
+                time.sleep(4.1) # Respect the rate limit
+            
+            db.session.commit()
+            print(f"Successfully summarized all chunks for file_id: {file_id}")
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"An error occurred during summarization for file_id {file_id}: {e}")
