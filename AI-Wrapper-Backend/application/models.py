@@ -45,7 +45,7 @@ class PDFChunk(db.Model):
         nullable=False
     )
    
-    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
+
     content = db.Column(db.Text, nullable=False)          
     chunk_index = db.Column(db.Integer, nullable=True)    
     start_char = db.Column(db.Integer, nullable=True)     

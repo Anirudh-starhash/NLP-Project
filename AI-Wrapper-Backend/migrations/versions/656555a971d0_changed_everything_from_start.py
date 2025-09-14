@@ -1,8 +1,8 @@
-"""Initial Migrations
+"""Changed Everything From Start
 
-Revision ID: efbb9a269737
+Revision ID: 656555a971d0
 Revises: 
-Create Date: 2025-09-14 14:10:48.822467
+Create Date: 2025-09-14 14:26:29.995934
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'efbb9a269737'
+revision = '656555a971d0'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -43,15 +43,13 @@ def upgrade():
     op.create_table('pdf_chunks',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('file_id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('chunk_index', sa.Integer(), nullable=True),
     sa.Column('start_char', sa.Integer(), nullable=True),
     sa.Column('end_char', sa.Integer(), nullable=True),
-    sa.Column('embedding_id', sa.PickleType(), nullable=True),
+    sa.Column('embedding_data', sa.PickleType(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['file_id'], ['pdf_file.file_id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['user_id'], ['user.user_id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('embeddings',

@@ -111,7 +111,7 @@ def generate_embeddings(self, file_id:int):
         
         pdf_chunks=db.session.query(PDFC).filter_by(file_id=file_id).all()
         de=DecisionEngine()
-        de.prepare_embeddings(pdf_file.embedding_strategy,pdf_file.filepath,file_id,pdf_chunks)
+        de.prepare_embeddings(pdf_file.embedding_model,pdf_file.filepath,file_id,pdf_chunks)
         
         pdf_file.status = 'embeddings_ready'
         db.session.commit()
