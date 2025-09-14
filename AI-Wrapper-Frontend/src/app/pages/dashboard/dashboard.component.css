@@ -269,3 +269,13 @@
 .popup-menu button:hover {
   background-color: #444;
 }
+
+
+
+
+app-pdf-prop {
+  display: block;
+  flex: 1;            /* grow inside main-content */
+  min-height: 400px;  /* optional fallback */
+  width: 100%;
+}

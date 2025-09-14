@@ -25,7 +25,7 @@ class PDFFile(db.Model):
     chunking_strategy = db.Column(db.String(50))  
     embedding_model = db.Column(db.String(100)) 
     
-    user = db.relationship('User', back_populates='pdf_file', lazy=True)
+    user = db.relationship('User', back_populates='pdf_files', lazy=True)
     chunks = db.relationship('PDFChunk', back_populates='pdf_file', lazy=True, cascade="all, delete-orphan")
 
 class PDFChunk(db.Model):
@@ -43,6 +43,18 @@ class PDFChunk(db.Model):
     content = db.Column(db.Text, nullable=False)          
     chunk_index = db.Column(db.Integer, nullable=True)    
     start_char = db.Column(db.Integer, nullable=True)     
-    end_char = db.Column(db.Integer, nullable=True)       
+    end_char = db.Column(db.Integer, nullable=True)    
+    embedding_id = db.Column(db.PickleType, nullable=True)
+    
+    embeddings=db.relationship('Embedding', backref='pdf_chunk', lazy=True, cascade="all, delete-orphan")   
 
-   
+class Embedding(db.Model):
+    __tablename__ = 'embeddings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    file_id=db.Column(db.Integer,db.ForeignKey('pdf_file.file_id', ondelete='CASCADE'),nullable=False)
+    chunk_id = db.Column(db.Integer, db.ForeignKey('pdf_chunks.id', ondelete='CASCADE'), nullable=False)
+    vector = db.Column(db.PickleType, nullable=False)  
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    pdf_chunk = db.relationship('PDFChunk', backref=db.backref('embeddings', lazy=True, cascade="all, delete-orphan"))

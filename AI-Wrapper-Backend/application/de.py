@@ -6,10 +6,20 @@ import logging
 from typing import Dict, Any
 from . import celery
 from application.database import db
-from application.models import PDFFile, PDFChunk
+from application.models import PDFFile, PDFChunk, Embedding
 
 import re
 import spacy
+import os
+import numpy as np
+import faiss
+import time
+
+
+from sentence_transformers import SentenceTransformer
+
+import google.generativeai as genai
+
 
 nlp=spacy.load("en_core_web_sm") # small english dataset
 
@@ -157,6 +167,7 @@ class DecisionEngine:
         for chunk in chunks:
             pdf_chunk = PDFChunk(
                 file_id=file_id,
+                pdf_hash=pdf_hash,
                 content=chunk['content'],
                 chunk_index=chunk['chunk_index'],
                 start_char=chunk['start_char'],
@@ -308,6 +319,171 @@ class DecisionEngine:
             start_char=end_char - len("".join(chunk_tokens[-overlap:])) if overlap > 0 else end_char
 
         return chunks
+    
+    
+    def prepare_embeddings(self,embedding_model:str,pdf_path:str,file_id:int, pdf_chunks: list):
+        '''
+            Prepares embeddings based on the embedding model.
+        '''
+        print(f"Preparing embeddings using model: {embedding_model}")
+        logging.info(f"Preparing embeddings using model: {embedding_model}")
+        
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        faiss_dir = os.path.join(base_dir, 'faiss')
+        
+        if not os.path.exists(faiss_dir):
+            os.makedirs(faiss_dir)
+            
+        index_file=os.path.join(faiss_dir, f"{file_id}.index")
+        
+        if os.path.exists(index_file):
+            logging.info(f"Index already exists for file {file_id}, skipping creation.")
+            return
+        
+        if embedding_model == "huggingface_transformers":
+            self.create_embeddings_huggingface(pdf_chunks, index_file,file_id)
+        else:
+            self.create_embeddings_gemini_api(pdf_chunks, index_file,file_id)
+         
+    '''
+        1) For Huggingface Transformers we use sentence-transformers
+              models to generate embeddings
+    '''   
+    def create_embeddings_huggingface(self, pdf_chunks: list, index_file: str, file_id:int):
+        
+        logging.info(f"Creating embeddings with Hugging Face for file_id: {file_id}")
+         
+        try:
+        
+            ''' 
+                1. Load a pre-trained Sentence Transformer model
+                all-MiniLM-L6-v2' is a good starting point
+            '''
+        
+            model = SentenceTransformer('all-MiniLM-L6-v2')
+            
+            ''' 2. Extract the content from the PDFChunk objects '''
+
+            chunk_contents = [chunk.content for chunk in pdf_chunks]
+
+            logging.info(f"Encoding {len(chunk_contents)} chunks to generate embeddings.")
+            
+            ''' 3. Generate embeddings for all chunks '''
+            embeddings = model.encode(chunk_contents, convert_to_numpy=True)
+            
+            
+            ''' 4. Save embeddings to the database '''
+            logging.info("Building FAISS index...")
+            embedding_dimension = embeddings.shape[1] 
+            index = faiss.IndexFlatL2(embedding_dimension) 
+            # Using L2 distance for similarity
+            
+            index.add(np.array(embeddings)) 
+            # Add the vectors to the index
+            
+            faiss.write_index(index, index_file)
+            logging.info(f"FAISS index saved to {index_file}")
+               
+            logging.info("Storing embeddings in the database...")
+            for i, chunk in enumerate(pdf_chunks):
+                
+                # Create a new Embedding object for each chunk
+                new_embedding = Embedding(
+                    file_id=file_id,
+                    chunk_id=chunk.id,
+                    vector=embeddings[i].tolist()  # Store as a Python list, PickleType will handle it
+                )
+                db.session.add(new_embedding) 
+                
+                db.session.flush()  # Flush to get the ID assigned
+                chunk.embedding_id = new_embedding.id
+                
+            db.session.commit()
+            logging.info("Successfully stored embeddings in the database.")
+
+        except Exception as e:
+            db.session.rollback() # Rollback the transaction on error
+            logging.error(f"Error creating Hugging Face embeddings: {e}")
+            
+            raise
+    
+    '''
+        1) For Gemini API we use google gemini api to generate embeddings
+    '''
+    def create_embeddings_gemini_api(self,pdf_chunks:list,index_file:str,file_id:int):
+        
+        logging.info(f"Creating embeddings with Gemini API for file_id: {file_id}")
+        
+        try:
+            api_key = os.getenv("GOOGLE_API_KEY")
+            
+            if not api_key:
+                raise ValueError("GOOGLE_API_KEY environment variable not set.")
+            
+            genai.configure(api_key=api_key)
+            
+            chunk_contents = [chunk.content for chunk in pdf_chunks]
+            logging.info(f"Generating embeddings for {len(chunk_contents)} chunks using Gemini API.")
+            
+            all_embeddings=[]
+            BATCH_SIZE=100
+            model_name = 'models/embedding-001'
+            
+            logging.info(f"Encoding chunks into vectors using Gemini API (in batches of {BATCH_SIZE})...")
+            for i in range(0, len(chunk_contents), BATCH_SIZE):
+                batch_texts = chunk_contents[i:i + BATCH_SIZE]
+                
+                # Make the API call for the current batch
+                result = genai.embed_content(
+                    model=model_name,
+                    content=batch_texts,
+                    task_type="RETRIEVAL_DOCUMENT" 
+                )
+                
+                
+                all_embeddings.extend(result['embedding'])
+                
+                logging.info(f"Processed batch {i//BATCH_SIZE + 1}/{(len(chunk_contents)-1)//BATCH_SIZE + 1}")
+                # Add a small delay to avoid hitting rate limits (e.g., 60 requests per minute)
+                time.sleep(1) 
+
+            embeddings_np = np.array(all_embeddings)
+            
+            logging.info("Building FAISS index...")
+            embedding_dimension = embeddings_np.shape[1] 
+            index = faiss.IndexFlatL2(embedding_dimension) 
+            # Using L2 distance for similarity
+            
+            index.add(np.array(embeddings_np)) 
+            # Add the vectors to the index
+            
+            faiss.write_index(index, index_file)
+            logging.info(f"FAISS index saved to {index_file}")
+               
+            logging.info("Storing embeddings in the database...")
+            for i, chunk in enumerate(pdf_chunks):
+                
+                # Create a new Embedding object for each chunk
+                new_embedding = Embedding(
+                    file_id=file_id,
+                    chunk_id=chunk.id,
+                    vector=embeddings_np[i].tolist()  # Store as a Python list, PickleType will handle it
+                )
+                db.session.add(new_embedding)  
+                
+                db.session.flush()  # Flush to get the ID assigned
+                chunk.embedding_id = new_embedding.id
+                
+            db.session.commit()
+            logging.info("Successfully stored embeddings in the database.")
+
+        except Exception as e:
+            db.session.rollback() # Rollback the transaction on error
+            logging.error(f"Error creating Gemini API embeddings: {e}")
+            
+            raise
+
+     
 
 if __name__ == "__main__":
     pdf_file = "sample_document.pdf"  # path to PDF file

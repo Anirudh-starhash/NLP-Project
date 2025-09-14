@@ -51,10 +51,10 @@
   </ng-container>
 
   <ng-template #propertiesView>
-    <app-pdf-properties
-      [fileId]="selectedPdfForProperties.file_id"
-      [fileName]="getDisplayName(selectedPdfForProperties.filename)"
+    <app-pdf-prop
+      [fileId]="selectedPdfForProperties?.file_id"
+      [fileName]="getDisplayName(selectedPdfForProperties?.filename)"
       (back)="selectedPdfForProperties = null">
-    </app-pdf-properties>
+    </app-pdf-prop>
   </ng-template>
 </main>

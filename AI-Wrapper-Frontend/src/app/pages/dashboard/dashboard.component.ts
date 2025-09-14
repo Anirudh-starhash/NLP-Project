@@ -208,9 +208,14 @@ export class DashboardComponent implements OnInit {
 
   selectedPdfForProperties: any = null;
 
-  viewProperties(pdf: any) {
+  viewProperties(pdf:any) {
+    if (!pdf || !pdf.file_id || !pdf.filename) {
+      console.error("Invalid PDF object", pdf);
+      return;
+    }
     this.selectedPdfForProperties = pdf;
   }
+
 
 
   @HostListener('document:click', ['$event'])

@@ -157,7 +157,7 @@ def get_chunks(file_id):
 
         chunk_list = [
             {
-                "chunk_id": chunk.chunk_id,
+                "chunk_index": chunk.chunk_index,
                 "content": chunk.content,
                 "start_char": chunk.start_char,
                 "end_char": chunk.end_char,
