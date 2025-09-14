@@ -52,5 +52,10 @@ htmlcov/
 .env.local
 .env.*.local
 
+
+
+# Environment files (secrets)
+.env
+
 apiKeys.txt
 
