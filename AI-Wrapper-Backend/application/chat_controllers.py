@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from application.database import db
 from application.models import User,PDFFile,PDFChunk
 import google.generativeai as genai
-from application.task import *
+from application.tasks import *
 
 import os
 from dotenv import load_dotenv
@@ -37,10 +37,11 @@ def prepare_document():
     
     
     summarize_document_chunks.delay(file_id)
+    question_generation.delay(file_id)
 
     # 3. Immediately respond to the user
     # A 202 "Accepted" status code is perfect for this.
     
     return jsonify({
-        "message": "Document summarization has started. This may take a few minutes."
+        "message": "Document summarization and question generation has started. This may take a few minutes."
     }), 202

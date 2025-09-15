@@ -72,13 +72,13 @@ class DecisionEngine:
         print(f"Document Analysis - Chars: {num_chars}, Words: {num_words}, Headings: {num_headings}")
         logging.info(f"Document Analysis - Chars: {num_chars}, Words: {num_words}, Headings: {num_headings}")
         
-        self.chunling_strategy = self.decide_chunking_strategy(num_chars, num_words, num_headings)
+        self.chunking_strategy = self.decide_chunking_strategy(num_chars, num_words, num_headings)
         self.embedding_model = self.decide_embedding_model(num_chars, num_words) 
         
-        print(f"Decided Chunking Strategy: {self.chunling_strategy}, Embedding Model: {self.embedding_model}")
+        print(f"Decided Chunking Strategy: {self.chunking_strategy}, Embedding Model: {self.embedding_model}")
         return {
             "status": "success",
-            "chunking_strategy": self.chunling_strategy, 
+            "chunking_strategy": self.chunking_strategy, 
             "embedding_model": self.embedding_model
         }
         

@@ -2,6 +2,7 @@ from .database import db
 from werkzeug.security import generate_password_hash,check_password_hash
 from datetime import datetime
 
+# User Class
 class User(db.Model):
     __tablename__='user'
     user_id=db.Column(db.Integer,primary_key=True,autoincrement=True)
@@ -14,6 +15,11 @@ class User(db.Model):
 
    
     pdf_files = db.relationship('PDFFile', back_populates='user', lazy=True)
+    
+    summaries = db.relationship('SummarizedPdfContent', back_populates='user', lazy=True, cascade="all, delete-orphan")
+    question_bank = db.relationship('QuestionBank', back_populates='user', lazy=True, cascade="all, delete-orphan")
+
+# PDFFile Class
 class PDFFile(db.Model):
     __tablename__ = 'pdf_file'
     
@@ -35,6 +41,11 @@ class PDFFile(db.Model):
         cascade="all, delete-orphan"
     )
 
+    summary = db.relationship('SummarizedPdfContent', back_populates='pdf_file', uselist=False, cascade="all, delete-orphan")
+    questions = db.relationship('QuestionBank', back_populates='pdf_file', lazy=True, cascade="all, delete-orphan")
+
+
+#PDFChunk Class
 class PDFChunk(db.Model):
     __tablename__ = 'pdf_chunks'
     id = db.Column(db.Integer, primary_key=True)
@@ -67,6 +78,8 @@ class PDFChunk(db.Model):
         cascade="all, delete-orphan"
     )   
 
+
+# Embedding Class
 class Embedding(db.Model):
     __tablename__ = 'embeddings'
     
@@ -88,7 +101,10 @@ class Embedding(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     pdf_chunk = db.relationship('PDFChunk', back_populates='embeddings')
-    
+  
+  
+  
+# Summrized PDF Content  
 class SummarizedPdfContent(db.Model):
     __tablename__ = 'summarized_pdf_content'
 
@@ -97,8 +113,32 @@ class SummarizedPdfContent(db.Model):
     original_pdf_id = db.Column(db.Integer, db.ForeignKey('pdf_file.file_id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    pdf_file = db.relationship('PDFFile', backref=db.backref('summary', uselist=False))
-    user = db.relationship('User', backref='summaries')
+
+    pdf_file = db.relationship('PDFFile', backref=db.backref('summary', uselist=False, cascade="all, delete-orphan"))
+    user = db.relationship('User', backref=db.backref('summaries', lazy=True, cascade="all, delete-orphan"))
 
     def __repr__(self):
         return f'<SummarizedPdfContent {self.id} for PDF {self.original_pdf_id}>'
+
+    
+
+
+#Question Bank Class
+class QuestionBank(db.Model):
+    __tablename__ = 'question_bank'
+
+    id = db.Column(db.Integer, primary_key=True)
+    question_text = db.Column(db.Text, nullable=False)
+    question_type = db.Column(db.String(50), nullable=False)  # e.g., 'mcq', 'msq', 'numeric', 'integer'
+    options = db.Column(db.Text, nullable=True)  # JSON-encoded list of options for MCQ/MSQ types
+    correct_answer = db.Column(db.Text, nullable=True)  # JSON or plain text depending on question type
+    file_id = db.Column(db.Integer, db.ForeignKey('pdf_file.file_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    pdf_file = db.relationship('PDFFile', backref=db.backref('questions', lazy=True, cascade="all, delete-orphan"))
+    user = db.relationship('User', backref=db.backref('question_bank', lazy=True, cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return f'<Question {self.id} for PDF {self.file_id}>'
+
