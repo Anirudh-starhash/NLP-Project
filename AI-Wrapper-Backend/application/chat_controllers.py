@@ -36,9 +36,15 @@ def prepare_document():
     if not pdf_record:
         return jsonify({"error": "PDF not found or you do not have permission to access it"}), 404
     
+    summary=SummarizedPdfContent.query.filter_by(original_file_id=file_id,user_id=current_user_id).first()
     
-    if not os.path.exists(pdf_record.file_path): # Check if the file actually exists
-         return jsonify({"error": "PDF file not found on server."}), 404
+    if summary:
+        return jsonify({
+            "message": "Summary already generated",
+            "file_id": file_id,
+            "summary": summary
+        }), 200
+    
 
     
     try:
