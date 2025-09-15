@@ -114,8 +114,8 @@ class SummarizedPdfContent(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    pdf_file = db.relationship('PDFFile', backref=db.backref('summary', uselist=False, cascade="all, delete-orphan"))
-    user = db.relationship('User', backref=db.backref('summaries', lazy=True, cascade="all, delete-orphan"))
+    pdf_file = db.relationship('PDFFile', back_populates="summary")
+    user = db.relationship('User', back_populates="summaries")
 
     def __repr__(self):
         return f'<SummarizedPdfContent {self.id} for PDF {self.original_pdf_id}>'
@@ -136,8 +136,8 @@ class QuestionBank(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    pdf_file = db.relationship('PDFFile', backref=db.backref('questions', lazy=True, cascade="all, delete-orphan"))
-    user = db.relationship('User', backref=db.backref('question_bank', lazy=True, cascade="all, delete-orphan"))
+    pdf_file = db.relationship('PDFFile', back_populates="questions")
+    user = db.relationship('User', back_populates="question_bank")
 
     def __repr__(self):
         return f'<Question {self.id} for PDF {self.file_id}>'
