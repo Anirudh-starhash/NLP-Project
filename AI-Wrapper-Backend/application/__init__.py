@@ -34,7 +34,7 @@ def create_app():
     api = Api(app)
     
     # Push app context before setting up Celery and blueprints
-    app.app_context().push()
+
 
     # 3. Configure Celery
     celery.conf.update(app.config["CELERY"])

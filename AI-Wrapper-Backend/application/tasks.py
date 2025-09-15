@@ -4,15 +4,23 @@ from application.database import db
 import logging
 from application.de import DecisionEngine
 from celery import chain
+import json
+import math
+
+from transformers import pipeline
 
 from . import create_app
 
 import os
+import time
+
+
 from dotenv import load_dotenv
 
-import time
 load_dotenv()
 import google.generativeai as genai
+
+
 
 
 @celery.task(bind=True)
@@ -97,7 +105,8 @@ def summarize_document_chunks(self,file_id):
     A Celery task to generate summaries for all chunks of a specific PDF file.
     """
     # Tasks run outside the normal Flask request context, so we create one
-    app = create_app()
+    
+    app,api,celery = create_app()
     with app.app_context():
         # --- All your original logic now lives inside the task ---
         
@@ -105,50 +114,64 @@ def summarize_document_chunks(self,file_id):
         if not pdf_record:
             print(f"Task failed: PDF with file_id {file_id} not found.")
             return
+        # Initialize models
+        
+        chunk_summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+        structured_summarizer = pipeline("summarization", model="t5-base")
 
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            print("Task failed: GOOGLE_API_KEY not configured.")
-            return
-            
-        genai.configure(api_key=api_key)
+        # Parameters
+        batch_size = 5  # Number of chunks per summarization request
+        chunk_max_length = 60
+        chunk_min_length = 20
+        final_max_length = 300
+        final_min_length = 100
         
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash-latest')
-            
-            chunk_summaries=""
-            for chunk in pdf_record.chunks:
-                if chunk.chunk_summary:
-                    continue
+            all_chunks = [chunk for chunk in pdf_record.chunks if not chunk.chunk_summary]
+            batch_summaries = []
 
-                prompt = f"""
-                You are analyzing a small text chunk that was extracted from a larger document. This chunk may be incomplete or start and end abruptly. Your task is to do the following:
+            # Process chunks in batches
+            for i in range(0, len(all_chunks), batch_size):
+                batch_chunks = all_chunks[i:i + batch_size]
 
-                1.  Read the text chunk and identify its primary subject or topic.
-                2.  Create a single, complete, and meaningful sentence that describes this topic.
-                3.  If the text is too fragmented to be understood, respond with "Fragment is too incoherent to summarize."
+                # Create batch prompt by combining your structured chunk prompt
+                batch_prompt = ""
+                for chunk in batch_chunks:
+                    batch_prompt += f"""
+                    You are analyzing a small text chunk that was extracted from a larger document. This chunk may be incomplete or start and end abruptly. Your task is to do the following:
 
-                Text Chunk:
-                ---
-                {chunk.content}
-                ---
+                    1.  Read the text chunk and identify its primary subject or topic.
+                    2.  Create a single, complete, and meaningful sentence that describes this topic.
+                    3.  If the text is too fragmented to be understood, respond with "Fragment is too incoherent to summarize."
 
-                One-sentence Summary:
-                """
-                
-                response = model.generate_content(prompt)
-                chunk.chunk_summary = response.text
-                db.session.add(chunk)
-                chunk_summaries+= response.text.strip() + " "
-                time.sleep(4.1) # Respect the rate limit
-            
-            db.session.commit()
-            print(f"Successfully summarized all chunks for file_id: {file_id}")
-            
-            
-           
-            
-            # Now Summarize the Entire PDF
+                    Text Chunk:
+                    ---
+                    {chunk.content}
+                    ---
+
+                    One-sentence Summary:
+                    """
+
+                # Summarize the batch
+                batch_summary = chunk_summarizer(
+                    batch_prompt, max_length=chunk_max_length, min_length=chunk_min_length, do_sample=False
+                )[0]['summary_text']
+
+                # Assign summaries to chunks roughly by splitting sentences
+                batch_sentences = batch_summary.split('.')[:len(batch_chunks)]
+                for chunk, sentence in zip(batch_chunks, batch_sentences):
+                    chunk.chunk_summary = sentence.strip() + ('.' if not sentence.endswith('.') else '')
+                    db.session.add(chunk)
+
+                batch_summaries.append(batch_summary.strip())
+
+                # Commit DB once per batch
+                db.session.commit()
+                time.sleep(1)  # optional, to avoid rate limits
+
+            print(f"Successfully summarized all chunks for file_id: {pdf_record.file_id}")
+
+            # Create final structured summary using your second prompt
             final_prompt = f"""
             You are tasked with creating a structured summary from multiple individual summaries extracted from different sections of a document. These summaries may overlap or be slightly redundant. Your job is to:
 
@@ -159,55 +182,56 @@ def summarize_document_chunks(self,file_id):
 
             Here are the individual summaries:
             ---
-            {chunk_summaries.strip()}
+            {" ".join(batch_summaries)}
             ---
 
             Structured Summary:
             """
 
-            final_response = model.generate_content(final_prompt)
-            print(f"Structured summary created for file_id: {file_id}")
-            
+            final_summary = structured_summarizer(
+                final_prompt, max_length=final_max_length, min_length=final_min_length, do_sample=False
+            )[0]['summary_text']
+
+            # Save final summary in DB
             summary_entry = SummarizedPdfContent(
-                summary_text=final_response.text.strip(),
+                summary_text=final_summary.strip(),
                 original_pdf_id=pdf_record.file_id,
                 user_id=pdf_record.user_id
             )
             db.session.add(summary_entry)
             db.session.commit()
-            print(f"Final summary saved in database for file_id: {file_id}")
+
+            print(f"Final summary saved in database for file_id: {pdf_record.file_id}")
 
         except Exception as e:
             db.session.rollback()
-            print(f"An error occurred during summarization for file_id {file_id}: {e}")
+            print(f"An error occurred during summarization for file_id {pdf_record.file_id}: {e}")
+            raise
+        
+        
+    
 
 
+        
+    
 @celery.task(bind=True)
 def question_generation(self,file_id):
     """
         Celery task to generate questions for a PDF file using existing NCERT exercises as context.
     """
     
-    app = create_app()
+    
+    app,api,celery = create_app()
     with app.app_context():
         
         pdf_record = PDFFile.query.get(file_id)
         if not pdf_record:
             print(f"Task failed: PDF with file_id {file_id} not found.")
             return
-
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            print("Task failed: GOOGLE_API_KEY not configured.")
-            return
-
-        genai.configure(api_key=api_key)
         
         try:
-            
-            model=genai.GenerativeAI("gemini-1.5-flash-latest")
-            
-             # Step 1: Collect example questions from the last page's chunk summaries
+            qg_pipeline = pipeline("text2text-generation", model="allenai/unifiedqa-t5-small")
+
             last_chunks = PDFC.query.filter_by(file_id=file_id).order_by(PDFC.chunk_index.desc()).limit(3).all()
             example_questions = []
             for chunk in last_chunks:
@@ -215,8 +239,7 @@ def question_generation(self,file_id):
                     example_questions.append(chunk.chunk_summary)
 
             example_context = "\n".join(example_questions) if example_questions else "No example questions available."
-            
-             # Step 2: Create the prompt
+
             prompt = f"""
             You are tasked with generating 100 exam questions for a textbook chapter based on the following example questions. The questions should be diverse and cover the entire chapter content.
 
@@ -233,13 +256,17 @@ def question_generation(self,file_id):
 
             Return only the JSON array without any extra text.
             """
-            
-            response = model.generate_content(prompt)
 
-            questions_json = response.text.strip()
+            questions_output = qg_pipeline(prompt, max_length=512, num_return_sequences=1)
 
-            import json
-            questions_list = json.loads(questions_json)
+            questions_json = questions_output[0]['generated_text'].strip()
+
+            try:
+                questions_list = json.loads(questions_json)
+            except json.JSONDecodeError as e:
+                print(f"JSON parsing error: {e}")
+                print(f"Response was:\n{questions_json}")
+                raise
 
             for q in questions_list:
                 question = QuestionBank(
@@ -253,10 +280,109 @@ def question_generation(self,file_id):
                 db.session.add(question)
 
             db.session.commit()
-            
             print(f"Successfully generated and stored {len(questions_list)} questions for file_id: {file_id}")
 
         except Exception as e:
             db.session.rollback()
             print(f"An error occurred during question generation for file_id {file_id}: {e}")
             raise
+        
+    
+    # load_dotenv()
+    
+    # app, api, celery_instance = create_app()
+    # with app.app_context():
+    #     pdf_record = PDFFile.query.get(file_id)
+    #     if not pdf_record:
+    #         print(f"Task failed: PDF with file_id {file_id} not found.")
+    #         return
+
+    #     api_key = os.getenv("GOOGLE_API_KEY")
+    #     if not api_key:
+    #         print("Task failed: GEMINI_API_KEY not configured.")
+    #         return
+            
+    #     genai.configure(api_key=api_key)
+        
+    #     # --- Configuration Parameters ---
+    #     model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    #     total_questions_needed = 100
+    #     questions_per_batch = 20  # Generate 20 questions per API call
+    #     num_batches = math.ceil(total_questions_needed / questions_per_batch)
+        
+    #     try:
+    #         # Step 1: Collect example context (done once)
+    #         last_chunks = PDFC.query.filter_by(file_id=file_id).order_by(PDFC.chunk_index.desc()).limit(3).all()
+    #         example_questions = [chunk.chunk_summary for chunk in last_chunks if chunk.chunk_summary]
+    #         example_context = "\n".join(example_questions) if example_questions else "No example questions from the text are available."
+            
+    #         all_generated_questions = []
+            
+    #         print(f"Starting question generation for file_id {file_id} in {num_batches} batches.")
+            
+    #         for i in range(num_batches):
+    #             print(f"Generating batch {i + 1}/{num_batches}...")
+                
+    #             # Step 2: Create a dynamic prompt for the current batch
+    #             prompt = f"""
+    #             You are an expert exam creator. Your task is to generate {questions_per_batch} diverse, high-quality exam questions based on a textbook chapter.
+
+    #             Use the following example questions from the end of the chapter for style and topic reference:
+    #             ---
+    #             {example_context}
+    #             ---
+
+    #             Generate {questions_per_batch} questions in a valid JSON array format. Do not repeat questions you may have generated in previous batches.
+    #             Each JSON object in the array must have the following fields:
+    #             1. "question_text": The question statement.
+    #             2. "question_type": One of 'mcq', 'msq', 'numeric', 'integer'.
+    #             3. "options": A list of 4 strings for 'mcq'/'msq' types, otherwise an empty list.
+    #             4. "correct_answer": The correct answer. For 'msq', this should be a list of strings.
+
+    #             Return ONLY the raw JSON array, without any surrounding text, explanations, or markdown formatting.
+    #             """
+                
+    #             response = model.generate_content(prompt)
+                
+    #             # Step 3: Clean and robustly parse the JSON response for this batch
+    #             try:
+    #                 # Clean the response to remove potential markdown code fences
+    #                 cleaned_json = response.text.strip().replace('```json', '').replace('```', '').strip()
+    #                 questions_list = json.loads(cleaned_json)
+    #                 all_generated_questions.extend(questions_list)
+    #                 print(f"Successfully parsed {len(questions_list)} questions in this batch.")
+    #             except (json.JSONDecodeError, AttributeError) as e:
+    #                 print(f"Could not parse JSON in batch {i + 1}. Error: {e}")
+    #                 print(f"Model response was:\n{response.text}")
+    #                 # Decide whether to continue or fail. For now, we'll continue.
+    #                 continue
+                
+    #             time.sleep(1.5) # Respect API rate limits
+
+    #         if not all_generated_questions:
+    #             print("No questions were generated successfully. Aborting.")
+    #             return
+
+    #         # Step 4: Save all collected questions to the database in one transaction
+    #         new_questions = []
+    #         for q in all_generated_questions:
+    #             question = QuestionBank(
+    #                 question_text=q.get('question_text'),
+    #                 question_type=q.get('question_type'),
+    #                 options=json.dumps(q.get('options')) if q.get('options') else None,
+    #                 correct_answer=json.dumps(q.get('correct_answer')) if isinstance(q.get('correct_answer'), list) else str(q.get('correct_answer')),
+    #                 file_id=file_id,
+    #                 user_id=pdf_record.user_id
+    #             )
+    #             new_questions.append(question)
+
+    #         db.session.add_all(new_questions)
+    #         db.session.commit()
+            
+    #         print(f"Successfully generated and stored {len(all_generated_questions)} total questions for file_id: {file_id}")
+
+    #     except Exception as e:
+    #         db.session.rollback()
+    #         print(f"An error occurred during question generation for file_id {file_id}: {e}")
+    #         raise
+    
