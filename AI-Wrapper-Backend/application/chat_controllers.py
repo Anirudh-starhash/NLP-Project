@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from application.database import db
-from application.models import User,PDFFile,PDFChunk
+from application.models import User,PDFFile,PDFChunk,SummarizedPdfContent
 import google.generativeai as genai
 from application.tasks import *
 
@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 import time
 load_dotenv()
+import fitz
 
 
 
@@ -36,12 +37,42 @@ def prepare_document():
         return jsonify({"error": "PDF not found or you do not have permission to access it"}), 404
     
     
-    summarize_document_chunks.delay(file_id)
-    question_generation.delay(file_id)
+    if not os.path.exists(pdf_record.file_path): # Check if the file actually exists
+         return jsonify({"error": "PDF file not found on server."}), 404
 
-    # 3. Immediately respond to the user
-    # A 202 "Accepted" status code is perfect for this.
     
-    return jsonify({
-        "message": "Document summarization and question generation has started. This may take a few minutes."
-    }), 202
+    try:
+        full_text=""
+        
+        with fitz.open(pdf_record.file_path) as doc:
+            for page in doc:
+                full_text+=page.get_text()
+                
+        if not full_text.strip():
+             return jsonify({"error": "Could not extract any text from the PDF."}), 400
+         
+        summarizer=pipeline("summarization",model="sshleifer/distilbart-cnn-12-6")
+        
+        #summary result
+        summary_result=summarizer(full_text,max_length=250,min_length=40,do_sample=False)
+        final_summary=summary_result[0]['summary_text']
+        
+        summary=SummarizedPdfContent(
+            user_id=current_user_id,
+            original_pdf_id=file_id,
+            summary_text=final_summary
+        )
+        db.session.add(summary)
+        db.session.commit()
+        
+    
+        return jsonify({
+            "message": "Summary generated successfully.",
+            "file_id": file_id,
+            "summary": final_summary
+        }), 200
+    
+    
+    except Exception as e:
+        return jsonify({"error": f"An unexpected error occurred during summarization: {str(e)}"}), 500
+
