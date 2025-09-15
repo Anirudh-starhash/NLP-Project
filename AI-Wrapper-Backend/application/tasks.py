@@ -92,7 +92,7 @@ def preprocess_pdf(self, file_id):
 
 
 @celery.task(bind=True)
-def summarize_document_chunks(file_id):
+def summarize_document_chunks(self,file_id):
     """
     A Celery task to generate summaries for all chunks of a specific PDF file.
     """
@@ -183,7 +183,7 @@ def summarize_document_chunks(file_id):
 
 
 @celery.task(bind=True)
-def question_generation(file_id):
+def question_generation(self,file_id):
     """
         Celery task to generate questions for a PDF file using existing NCERT exercises as context.
     """
