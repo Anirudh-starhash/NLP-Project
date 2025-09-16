@@ -1,5 +1,5 @@
 from . import celery
-from application.models import PDFFile, PDFChunk as PDFC, SummarizedPdfContent, QuestionBank
+from application.models import PDFFile, PDFChunk, SummarizedPdfContent, QuestionBank
 from application.database import db
 import logging
 from application.de import DecisionEngine
@@ -66,15 +66,14 @@ def preprocess_pdf(self, file_id):
         
     
 
-        de.prepare_chunks(pdf_file.chunking_strategy,pdf_file.filepath,file_id)
+        pdf_chunks=de.prepare_chunks(pdf_file.chunking_strategy,pdf_file.filepath,file_id)
         
         
         
         pdf_file.status = 'chunks_ready'
         db.session.commit()
         
-        pdf_chunks=db.session.query(PDFC).filter_by(file_id=file_id).all()
-        print(pdf_chunks)
+        
         
         de.prepare_embeddings(pdf_file.embedding_model,pdf_file.filepath,file_id,pdf_chunks)
         

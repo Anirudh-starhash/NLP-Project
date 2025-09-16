@@ -47,6 +47,15 @@ class DecisionEngine:
     def __init__(self):
         logging.info("Decision Engine initialized.")
         
+        
+        try:
+            logging.info("Loading SentenceTransformer model into memory...")
+            self.hf_model = SentenceTransformer('all-MiniLM-L6-v2')
+            logging.info("SentenceTransformer model loaded successfully.")
+        except Exception as e:
+            logging.error(f"Failed to load SentenceTransformer model: {e}")
+            self.hf_model = None 
+        
     def analyze_pdf(self,pdf_path : str)->Dict[str,Any]:
         '''
             Analyzes the PDF and extracts key information.
@@ -154,24 +163,30 @@ class DecisionEngine:
         text = self.extract_text_from_pdf(pdf_path)
         
         if chunking_strategy == "section_heading_split":
-            chunks = self.section_heading_split(text)
+            chunks_data = self.section_heading_split(text)
         elif chunking_strategy == "split_by_sentence":
-            chunks = self.split_by_sentence(text)
+            chunks_data = self.split_by_sentence(text)
         else:
-            chunks = self.token_split(text)
+            chunks_data = self.token_split(text)
         
         
-        for chunk in chunks:
+        created_chunks = []
+        for chunk_dict in chunks_data:
             pdf_chunk = PDFChunk(
                 file_id=file_id,
-                content=chunk['content'],
-                chunk_index=chunk['chunk_index'],
+                content=chunk_dict['content'],
+                chunk_index=chunk_dict['chunk_index'],
             )
             db.session.add(pdf_chunk)
-        db.session.commit()
+            created_chunks.append(pdf_chunk)
         
-        print(f"Prepared {len(chunks)} chunks.")
-        logging.info(f"Prepared {len(chunks)} chunks.")
+        db.session.commit() # Commit all new chunks at once
+        
+        print(f"Prepared and saved {len(created_chunks)} chunks.")
+        return created_chunks # Return the list of created objects
+
+        
+        
         
      
      
@@ -200,7 +215,7 @@ class DecisionEngine:
         matches=list(heading_pattern.finditer(text))
         
         if not matches:
-            return self.recursive_character_split(text)
+            return self.split_by_sentence(text)
         
         start_pos=0
         raw_chunks=[]
@@ -241,7 +256,7 @@ class DecisionEngine:
             
             if len(chunk_text) > max_chunk_size:
                 # Use your existing function to split the oversized chunk
-                sub_chunks = self.recursive_character_split(chunk_text, max_chunk_size, overlap)
+                sub_chunks = self.split_by_sentence(chunk_text, max_chunk_size, overlap)
                 for sub_chunk in sub_chunks:
                     sub_chunk['chunk_index'] = chunk_idx_counter
                     final_chunks.append(sub_chunk)
@@ -258,7 +273,7 @@ class DecisionEngine:
         return final_chunks
     
    
-    def split_by_sentence(text: str, max_chunk_size: int = 2000, overlap_sentences: int = 2) -> list:
+    def split_by_sentence(self,text: str, max_chunk_size: int = 2000, overlap_sentences: int = 2) -> list:
         """
         Splits text into chunks by sentences, ensuring no chunk exceeds max_chunk_size.
         Creates a more robust overlap by reusing the last few sentences of the previous chunk.
@@ -335,26 +350,18 @@ class DecisionEngine:
         tokens=[token.text for token in doc]
         
         idx=0
-        start_char=0
         
         i=0
         while i < len(tokens):
-            chunk_tokens=tokens[i:i+max_tokens]
-            chunk_text="".join(chunk_tokens)
-            end_char=start_char + len(chunk_text)
-            
-           
-            chunks.append({
-                "content":chunk_text,
-                "chunk_index":idx,
-                "start_char":start_char,
-                "end_char":end_char
-            })
-            idx+=1
-            
-            i+=max_tokens - overlap
-            start_char=end_char - len("".join(chunk_tokens[-overlap:])) if overlap > 0 else end_char
+            chunk_tokens = tokens[i:i+max_tokens]
+            chunk_text = " ".join(chunk_tokens) # FIX: join with a space
 
+            chunks.append({
+                "content": chunk_text,
+                "chunk_index": idx,
+            })
+            idx += 1
+            i += max_tokens - overlap
         return chunks
     
     
@@ -390,6 +397,9 @@ class DecisionEngine:
         
         logging.info(f"Creating embeddings with Hugging Face for file_id: {file_id}")
          
+        if not self.hf_model:
+                raise RuntimeError("Hugging Face model is not available.")
+            
         try:
         
             ''' 
@@ -397,7 +407,7 @@ class DecisionEngine:
                 all-MiniLM-L6-v2' is a good starting point
             '''
         
-            model = SentenceTransformer('all-MiniLM-L6-v2')
+            
             
             ''' 2. Extract the content from the PDFChunk objects '''
 
@@ -406,7 +416,7 @@ class DecisionEngine:
             logging.info(f"Encoding {len(chunk_contents)} chunks to generate embeddings.")
             
             ''' 3. Generate embeddings for all chunks '''
-            embeddings = model.encode(chunk_contents, convert_to_numpy=True)
+            embeddings = self.hf_model.encode(chunk_contents, convert_to_numpy=True)
             logging.info(f"Embeddings shape before reshape: {embeddings.shape}")
 
             if embeddings.ndim == 1:

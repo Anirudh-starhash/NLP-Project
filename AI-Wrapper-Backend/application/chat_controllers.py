@@ -37,7 +37,7 @@ def summarize_with_gemini(full_text: str) -> str:
     Summarizes a long text using the Gemini 1.5 Pro API.
     """
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        model = genai.GenerativeModel('gemini-1.5-pro')
         #prompt = f"Please provide a concise, well-structured summary of the following document:\n\n---\n\n{full_text}"
         prompt = f"""
         You are an expert at summarizing long documents. Please read the following document carefully and generate a detailed summary.
