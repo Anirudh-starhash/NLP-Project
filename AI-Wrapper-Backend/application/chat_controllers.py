@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 import time
 load_dotenv()
 import fitz
+import faiss
+import numpy as np
+THRESHOLD_DISTANCE = 0.6
 
 
 try:
@@ -25,8 +28,22 @@ def summarize_with_gemini(full_text: str) -> str:
     Summarizes a long text using the Gemini 1.5 Pro API.
     """
     try:
-        model = genai.GenerativeModel('gemini-1.5-pro-latest')
-        prompt = f"Please provide a concise, well-structured summary of the following document:\n\n---\n\n{full_text}"
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        #prompt = f"Please provide a concise, well-structured summary of the following document:\n\n---\n\n{full_text}"
+        prompt = f"""
+        You are an expert at summarizing long documents. Please read the following document carefully and generate a detailed summary.
+
+        Requirements:
+        1. The summary should be around 500 to 1000 words.
+        2. Present the summary in well-structured bullet points or numbered lists.
+        3. Highlight key sections, findings, and important details.
+        4. Ensure the summary is coherent and easy to understand.
+
+        Here is the document:
+
+        ---
+        {full_text}
+        """
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
@@ -95,3 +112,87 @@ def prepare_document():
     except Exception as e:
         print(f"Error during summarization: {e}")
         return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
+    
+
+
+@chat_blueprint.route('/query_document', methods=['POST'])
+@jwt_required()
+def query_document():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    query_text = data.get('query', '').strip()
+    pdf_id=data['pdf_id']
+    if not query_text:
+        return jsonify({"error": "Empty query"}), 400
+
+    # Remove the command prefix
+    if query_text.startswith('/summary'):
+        query_text = query_text[len('/summary'):].strip()
+
+    try:
+        # 1. Generate query embedding using all-MiniLM-L6-v2
+        embedding = generate_query_embedding(query_text)  # Defined below
+
+        # 2. Perform similarity search using FAISS
+        matched_chunk = search_similar_chunk(embedding,pdf_id)
+
+        if not matched_chunk:
+            return jsonify({"answer": "No relevant document found."}), 200
+
+        # 3. Pass to LLM for final answer formatting
+        answer_text = generate_llm_response(query_text, matched_chunk.content)
+
+        return jsonify({"answer": answer_text}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+def generate_query_embedding(text):
+    embedding = model.encode(text, convert_to_numpy=True)
+    return embedding
+
+def search_similar_chunk(query_embedding, pdf_id):
+    # Load user's FAISS index and associated chunks from DB
+    index = faiss.read_index(f'/path/to/index_{user_id}.index')
+    chunks = PDFChunk.query.filter_by(file_id=pdf_id).all() # List of chunk objects with ids and content
+
+    # Perform search
+    D, I = index.search(np.expand_dims(query_embedding, axis=0), k=1)
+    nearest_idx = I[0][0]
+
+    if nearest_idx == -1 or D[0][0] > THRESHOLD_DISTANCE:
+        return None
+
+    return chunks[nearest_idx]
+
+
+def generate_llm_response(query, chunk_content):
+    
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+
+        prompt = f"""
+        You are an expert assistant. Based on the document chunk below, answer the following query clearly and informatively.
+
+        Document:
+        ---
+        {chunk_content}
+
+        Query:
+        ---
+        {query}
+
+        Answer:
+        """
+
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        print(f"An error occurred during Gemini API call: {e}")
+        raise e

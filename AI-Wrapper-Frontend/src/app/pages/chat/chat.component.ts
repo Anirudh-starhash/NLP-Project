@@ -33,6 +33,10 @@ export class ChatComponent implements OnInit {
   uploadedPdfs: WritableSignal<PDF[]> = signal([]);
   isDocListVisible: WritableSignal<boolean> = signal(false);
 
+  pdf: WritableSignal<PDF | null> = signal(null);
+
+
+
   private readonly router = inject(Router);
 
   constructor(private httpClient:HttpClient){}
@@ -75,6 +79,7 @@ export class ChatComponent implements OnInit {
   }
 
   selectDocument(pdf: PDF) {
+    this.pdf.set(pdf)
     const text = `Querying from document: "${this.getDisplayName(pdf.filename)}"`;
     const newMessage: Message = {
       text: text,
@@ -139,9 +144,56 @@ export class ChatComponent implements OnInit {
         textarea.style.height = 'auto';
     }
 
+     // Detect commands
+    if (capturedInput.startsWith('/summary')) {
+        this.processSummaryQuery(capturedInput);
+    } else {
+        // fallback to regular chat
+        this.addMessage(capturedInput, 'user');
+        this.simulateBotResponse(capturedInput);
+    }
+
 
     // Simulate bot response
-    setTimeout(() => {
+
+
+
+  }
+
+  processSummaryQuery(query: string) {
+
+      const currentPdf = this.pdf();
+      this.addMessage(query, 'user');
+
+      const token = localStorage.getItem('access_token');
+      const endpoint = 'http://localhost:5000/api/query_document';
+      const body = { query: query,pdf_id:currentPdf?.file_id };
+
+      this.httpClient.post(endpoint, body, {
+          headers: { 'Authorization': `Bearer ${token}` },
+          withCredentials: true
+      }).subscribe({
+          next: (response: any) => {
+              this.addMessage(response.answer, 'bot');
+          },
+          error: (error) => {
+              this.addMessage("Error retrieving summary.", 'bot');
+              console.error('API error:', error);
+          }
+      });
+  }
+
+  addMessage(text: string, sender: 'user' | 'bot') {
+    const msg: Message = {
+        text: text,
+        sender: sender,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    this.messages.update(msgs => [...msgs, msg]);
+  }
+
+  simulateBotResponse(capturedInput:string){
+      setTimeout(() => {
       const botResponse: Message = {
         text: `This is a simulated response regarding: "${capturedInput}"`,
         sender: 'bot',
