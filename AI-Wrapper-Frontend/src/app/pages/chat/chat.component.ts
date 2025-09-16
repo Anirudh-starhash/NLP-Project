@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 
+
+import { v4 as uuidv4 } from 'uuid';
+
 // Define interfaces for our data structures for type safety
 interface PDF {
   file_id: string;
@@ -34,6 +37,7 @@ export class ChatComponent implements OnInit {
   isDocListVisible: WritableSignal<boolean> = signal(false);
 
   pdf: WritableSignal<PDF | null> = signal(null);
+  sessionId: WritableSignal<string> = signal(uuidv4());
 
 
 
@@ -167,7 +171,11 @@ export class ChatComponent implements OnInit {
 
       const token = localStorage.getItem('access_token');
       const endpoint = 'http://localhost:5000/api/query_document';
-      const body = { query: query,pdf_id:currentPdf?.file_id };
+      const body = {
+        query: query,
+        pdf_id:currentPdf?.file_id,
+        session_id: this.sessionId()
+      };
 
       this.httpClient.post(endpoint, body, {
           headers: { 'Authorization': `Bearer ${token}` },

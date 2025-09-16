@@ -18,7 +18,8 @@ class User(db.Model):
     
     summaries = db.relationship('SummarizedPdfContent', back_populates='user', lazy=True, cascade="all, delete-orphan")
     question_bank = db.relationship('QuestionBank', back_populates='user', lazy=True, cascade="all, delete-orphan")
-
+    chat_messages = db.relationship('ChatMessage', back_populates='user', lazy=True, cascade="all, delete-orphan")
+    query_caches = db.relationship('QueryCache', back_populates='user', lazy=True, cascade="all, delete-orphan")
 # PDFFile Class
 class PDFFile(db.Model):
     __tablename__ = 'pdf_file'
@@ -43,8 +44,9 @@ class PDFFile(db.Model):
 
     summary = db.relationship('SummarizedPdfContent', back_populates='pdf_file', uselist=False, cascade="all, delete-orphan")
     questions = db.relationship('QuestionBank', back_populates='pdf_file', lazy=True, cascade="all, delete-orphan")
-
-
+    chat_messages = db.relationship('ChatMessage', back_populates='pdf_file', lazy=True, cascade="all, delete-orphan")
+    query_caches = db.relationship('QueryCache', back_populates='pdf_file', lazy=True, cascade="all, delete-orphan")
+    
 #PDFChunk Class
 class PDFChunk(db.Model):
     __tablename__ = 'pdf_chunks'
@@ -140,3 +142,35 @@ class QuestionBank(db.Model):
     def __repr__(self):
         return f'<Question {self.id} for PDF {self.file_id}>'
 
+
+import uuid
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+   
+   
+    session_id = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
+    file_id = db.Column(db.Integer, db.ForeignKey('pdf_file.file_id'), nullable=True)
+    
+    message = db.Column(db.Text, nullable=False)
+    sender = db.Column(db.String(10), nullable=False) # 'user' or 'bot'
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', back_populates='chat_messages')
+    pdf_file = db.relationship('PDFFile', back_populates='chat_messages')
+    
+
+
+class QueryCache(db.Model):
+    __tablename__ = 'query_cache'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    question_text = db.Column(db.Text, nullable=False, unique=True)
+    answer_text = db.Column(db.Text, nullable=False)
+    question_embedding = db.Column(db.PickleType, nullable=False)
+    
+    user = db.relationship('User', back_populates='query_caches')
+    pdf_file = db.relationship('PDFFile', back_populates='query_caches')
