@@ -59,9 +59,7 @@ class PDFChunk(db.Model):
 
     content = db.Column(db.Text, nullable=False)          
     chunk_index = db.Column(db.Integer, nullable=True)  
-    chunk_summary=db.Column(db.String,nullable=True)  
-    start_char = db.Column(db.Integer, nullable=True)     
-    end_char = db.Column(db.Integer, nullable=True)    
+    chunk_summary=db.Column(db.String,nullable=True)     
     embedding_data = db.Column(db.PickleType, nullable=True)
     
    

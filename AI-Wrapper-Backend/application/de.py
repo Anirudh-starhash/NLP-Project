@@ -116,14 +116,15 @@ class DecisionEngine:
     
     
     def decide_chunking_strategy(self, num_chars: int, num_words: int, num_headings: int) -> str:
-        
+    
         if num_headings >= 5:
             logging.info("Choosing 'section_heading_split'.")
             return "section_heading_split"
         
         elif num_chars > 100000 or num_words > 20000:
-            logging.info("Choosing 'recursive_character_split'.")
-            return "recursive_character_split"
+            # This is the line to change
+            logging.info("Choosing 'split_by_sentence'.")
+            return "split_by_sentence"
         
         else:
             logging.info("Choosing 'token_split'.")
@@ -154,8 +155,8 @@ class DecisionEngine:
         
         if chunking_strategy == "section_heading_split":
             chunks = self.section_heading_split(text)
-        elif chunking_strategy == "recursive_character_split":
-            chunks = self.recursive_character_split(text)
+        elif chunking_strategy == "split_by_sentence":
+            chunks = self.split_by_sentence(text)
         else:
             chunks = self.token_split(text)
         
@@ -165,8 +166,6 @@ class DecisionEngine:
                 file_id=file_id,
                 content=chunk['content'],
                 chunk_index=chunk['chunk_index'],
-                start_char=chunk['start_char'],
-                end_char=chunk['end_char'],
             )
             db.session.add(pdf_chunk)
         db.session.commit()
@@ -184,7 +183,7 @@ class DecisionEngine:
         4)  Return a list of dicts with content, chunk_index, 
             start_char, end_char
     '''   
-    def section_heading_split(self, text: str) -> list:
+    def section_heading_split(self, text: str,max_chunk_size: int = 2000, overlap: int = 200) -> list:
         
         '''
             Splits text into chunks based on headings.
@@ -192,7 +191,7 @@ class DecisionEngine:
             start_char, end_char.
         '''
         
-        chunks=[]
+        final_chunks=[]
         #regex pattens for headings
         heading_pattern = re.compile(r'(^\d+(\.\d+)*\s.*)|(^Chapter\s\d+)', re.MULTILINE)
         # most chapters work with 1, 2.1 or Chapter X etc
@@ -203,77 +202,120 @@ class DecisionEngine:
         if not matches:
             return self.recursive_character_split(text)
         
-        #create chunks based on headings positions
-        for idx , match in enumerate(matches):
-            start_idx=match.start()
-            end_idx=matches[idx+1].start() if idx+1 < len(matches) else len(text)
-            chunk_text=text[start_idx:end_idx].strip()
-            
-            if chunk_text:
-                chunks.append({
-                    "content":chunk_text,
-                    "chunk_index":idx,
-                    "start_char":start_idx,
-                    "end_char":end_idx
-                })
+        start_pos=0
+        raw_chunks=[]
         
-        return chunks
-    
-    '''
-        1)  In Recursive Character Split we use NLP techniques using reges
-            for sentence detection for smart splits like if any threshold 
-            exceeds
-        2)  Split text recursively into <= max_chunk_size characters
-        3) Prefer splitting at sentence boundaries (using NLTK/spaCy)
-        4) Include overlap for context
+        if matches[0].start() > 0:
+            raw_chunks.append(text[0:matches[0].start()].strip())
        
-    '''
-    def recursive_character_split(self, text: str, max_chunk_size: int = 2000, overlap: int = 200) -> list:
-        '''
-            Splits text recursively into smaller chunks 
-            based on character count.
-            Tries to split at sentence boundaries using spaCy.
-        '''
-        
-        chunks=[]
-        doc=nlp(text)
-        sentences=[sent.text for sent in doc.sents]
-        
-        current_chunk=""
-        start_char=0
-        idx=0
-        
-        for sent in sentences:
-            if len(sent)+ len(current_chunk) + 1 < max_chunk_size:
-                current_chunk+=sent+ " "
-            else:
-                end_char=start_char + len(current_chunk)
-                chunks.append({
-                    "content":current_chunk.strip(),
-                    "chunk_index":idx,
-                    "start_char":start_char,
-                    "end_char":end_char
-                })
-                idx+=1
-                
-                # start new chunk with overlap
-                overlap_text=current_chunk[-overlap:] if overlap > 0 else ""
-                start_char=end_char - len(overlap_text)
-                current_chunk=overlap_text + sent + " "
-
-        
-        # Add last chunk
-        if current_chunk.strip():
-            end_char = start_char + len(current_chunk)
-            chunks.append({
-                "content": current_chunk.strip(),
-                "chunk_index": idx,
-                "start_char": start_char,
-                "end_char": end_char
-            })
+        #create chunks based on headings positions
+        for i, match in enumerate(matches):
+            start_pos = match.start()
+            end_pos = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+            raw_chunks.append(text[start_pos:end_pos].strip())
             
-        return chunks
+            
+        '''
+         2. Process raw chunks: subdivide if too large and add overlap
+        '''
+        
+        chunk_idx_counter=0
+        for i, chunk_text in enumerate(raw_chunks):
+            
+            '''
+                OVERLAP-LOGIc
+                Prepend the end of the PREVIOUS 
+                chunk to the current one
+            '''
+           
+            if i > 0 and overlap > 0:
+                # Find the last N characters of the previous chunk
+                overlap_text = raw_chunks[i-1][-overlap:]
+                chunk_text = overlap_text + "\n...\n" + chunk_text
+
+
+            '''
+                SUBDIVISION LOGIC
+                If the chunk is still too big, split it by sentences
+            '''
+            
+            if len(chunk_text) > max_chunk_size:
+                # Use your existing function to split the oversized chunk
+                sub_chunks = self.recursive_character_split(chunk_text, max_chunk_size, overlap)
+                for sub_chunk in sub_chunks:
+                    sub_chunk['chunk_index'] = chunk_idx_counter
+                    final_chunks.append(sub_chunk)
+                    chunk_idx_counter += 1
+                    
+            # Otherwise, add the chunk as is
+            elif chunk_text:
+                final_chunks.append({
+                    "content": chunk_text,
+                    "chunk_index": chunk_idx_counter,
+                })
+                chunk_idx_counter += 1
+                
+        return final_chunks
     
+   
+    def split_by_sentence(text: str, max_chunk_size: int = 2000, overlap_sentences: int = 2) -> list:
+        """
+        Splits text into chunks by sentences, ensuring no chunk exceeds max_chunk_size.
+        Creates a more robust overlap by reusing the last few sentences of the previous chunk.
+
+        Args:
+            text: The input text to split.
+            max_chunk_size: The maximum number of characters for a chunk.
+            overlap_sentences: The number of sentences from the end of the previous
+                                chunk to prepend to the next one.
+
+        Returns:
+            A list of dictionaries, each containing the chunk content and its index.
+        """
+        if not text:
+            return []
+
+        # Use spaCy to efficiently split the text into sentences
+        doc = nlp(text)
+        sentences = list(doc.sents)
+
+        chunks = []
+        current_chunk_sentences = []
+        current_chunk_len = 0
+        chunk_idx_counter = 0
+
+        for i, sentence in enumerate(sentences):
+            # Check if adding the next sentence would exceed the max size
+            if current_chunk_len + len(sentence.text_with_ws) > max_chunk_size and current_chunk_sentences:
+                # 1. Finalize the current chunk
+                chunks.append({
+                    "content": "".join([s.text_with_ws for s in current_chunk_sentences]).strip(),
+                    "chunk_index": chunk_idx_counter
+                })
+                chunk_idx_counter += 1
+
+                # 2. Start a new chunk with an overlap of the last few sentences
+                # This is more robust than character-based overlap
+                start_index_for_overlap = max(0, len(current_chunk_sentences) - overlap_sentences)
+                new_chunk_start_sentences = current_chunk_sentences[start_index_for_overlap:]
+                
+                # Reset the current chunk to the overlapping sentences
+                current_chunk_sentences = new_chunk_start_sentences
+                current_chunk_len = sum(len(s.text_with_ws) for s in new_chunk_start_sentences)
+
+            # 3. Add the current sentence to the new or existing chunk
+            current_chunk_sentences.append(sentence)
+            current_chunk_len += len(sentence.text_with_ws)
+
+        # Add the final remaining chunk
+        if current_chunk_sentences:
+            chunks.append({
+                "content": "".join([s.text_with_ws for s in current_chunk_sentences]).strip(),
+                "chunk_index": chunk_idx_counter
+            })
+
+        return chunks
+        
     '''
         1) For Token Split we use simple whitespace and 
            punctuation based tokenization

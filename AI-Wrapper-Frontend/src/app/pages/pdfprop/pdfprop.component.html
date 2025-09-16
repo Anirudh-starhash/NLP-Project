@@ -8,8 +8,6 @@
       <thead>
         <tr>
           <th>#</th>
-          <th>Start Char</th>
-          <th>End Char</th>
           <th>Content</th>
           <th>EmbeddingID</th>
           <th>Actions</th>
@@ -18,8 +16,6 @@
       <tbody>
         <tr *ngFor="let chunk of chunks; let i = index">
           <td>{{ i + 1 }}</td>
-          <td>{{ chunk.start_char }}</td>
-          <td>{{ chunk.end_char }}</td>
           <td class="chunk-content">{{ chunk.content }}</td>
           <td>{{ chunk.embedding_data }}</td>
            <td>
