@@ -7,8 +7,8 @@ from celery import chain
 import json
 import math
 
-from transformers import pipeline
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+
+
 
 from . import create_app
 

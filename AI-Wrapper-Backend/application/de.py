@@ -379,7 +379,6 @@ class DecisionEngine:
             logging.info("Building FAISS index...")
             embedding_dimension = embeddings.shape[1] 
             index = faiss.IndexFlatL2(embedding_dimension) 
-            # Using L2 distance for similarity
             
             index.add(np.array(embeddings)) 
             # Add the vectors to the index
